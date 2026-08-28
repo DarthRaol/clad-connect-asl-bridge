@@ -1,0 +1,67 @@
+- !<AssetImportMetadata/d717b07a-f7a3-4373-b457-b077e5ad5fc5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> dd53c083-8e98-4f84-99a3-3b0a629738c9
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> dd53c083-8e98-4f84-99a3-3b0a629738c9
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 18ddf133-4c1b-4edb-9866-656db140e42c
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/18ddf133-4c1b-4edb-9866-656db140e42c>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 57c67304-e818-4326-8906-002c15341e87
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    captureDelaySeconds: false
+    confirmAudio: false
+    letters: false
+    resumePreviousSession: false
+    samplesPerLetter: false
+    signingHand: false
+    statusText: false
+    triggerHand: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - letters: ABCDEFGHIKLMNOPQRSTUVWXY
+      samplesPerLetter: !<float> 5.000000
+      statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      signingHand: right
+      triggerHand: left
+      captureDelaySeconds: !<float> 0.000000
+      confirmAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      resumePreviousSession: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input string letters = "ABCDEFGHIKLMNOPQRSTUVWXY" {"hint":"Letters to record, in order. J and Z are omitted by default: they are motion letters, not static handshapes."}'
+    - '// @input float samplesPerLetter = 5 {"hint":"How many samples to capture per letter. 5-10 is a reasonable range."}'
+    - '// @input Component.Text statusText {"hint":"Large text the operator reads. Shows the target letter, the counter, and the RECORDED confirmation."}'
+    - '// @input string signingHand = "right" {"hint":"The hand that FORMS the letter. Its landmarks are what get recorded.", "widget":"combobox", "values":[{"label":"right", "value":"right"}, {"label":"left", "value":"left"}]}'
+    - '// @input string triggerHand = "left" {"hint":"The hand that PINCHES to trigger a capture. Keep it different from signingHand — see the header comment.", "widget":"combobox", "values":[{"label":"left", "value":"left"}, {"label":"right", "value":"right"}]}'
+    - '// @input float captureDelaySeconds {"hint":"Seconds between the pinch and the capture. 0 = instant (two-hand mode). Set 2-3 for one-handed recording."}'
+    - '// @input Component.AudioComponent confirmAudio {"hint":"Optional. Plays on each successful capture — useful when the operator is watching their hands, not the text."}'
+    - '// @input bool resumePreviousSession = true {"hint":"Reload samples saved in a previous session. Turn OFF to start a clean recording run."}'
