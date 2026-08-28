@@ -62,10 +62,67 @@
 import {HandInputData} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/HandInputData"
 import type {BaseHand} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/BaseHand"
 import type {HandType} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/HandType"
-import {FEATURE_DIM, LANDMARK_COUNT, LANDMARK_ORDER, normalizeTrackedHand} from "./LandmarkCapture"
+import {
+  FEATURE_DIM,
+  LANDMARK_COUNT,
+  LANDMARK_ORDER,
+  normalizeLandmarks,
+  normalizeTrackedHand,
+  pointsFromTrackedHand
+} from "./LandmarkCapture"
+import {NEGATIVE_KEY} from "./TemplateFormat"
+
+/**
+ * What the operator is asked to do for each negative sample, cycled in order.
+ *
+ * Half the entries are transitions on purpose. A hand mid-way between two
+ * letters is the pose that will actually cause spurious commits in real use —
+ * it is a plausible-looking handshape that is not a letter, and it is what a
+ * distance threshold most needs to be able to reject. Static non-letter poses
+ * (rest, flat palm, pointing, fist) sit far from every template and are the
+ * easy case; transitions are the hard one, so they get the most coverage.
+ */
+const NEGATIVE_PROMPTS: readonly string[] = [
+  "MOVE between two letters\n(capture mid-transition)",
+  "Hand at REST\n(relaxed, by your side)",
+  "MOVE between two letters\n(different pair)",
+  "FLAT PALM\n(fingers together, open)",
+  "MOVE between two letters\n(capture mid-transition)",
+  "POINTING\n(index out, others closed)",
+  "MOVE between two letters\n(different pair)",
+  "LOOSE FIST\n(not a tight S)",
+  "MOVE between two letters\n(capture mid-transition)",
+  "Hand MOVING\n(any casual motion)"
+]
 
 /** Schema version written into templates.json. Bump on any shape change. */
-const TEMPLATE_FORMAT_VERSION = 1
+const TEMPLATE_FORMAT_VERSION = 2
+
+/** Raw positions are 26 landmarks x (x, y, z), same layout as the feature vector. */
+const RAW_DIM = LANDMARK_COUNT * 3
+
+/**
+ * One captured sample.
+ *
+ * BOTH representations are kept. The normalized vector is what the classifier
+ * consumes; the raw world-space positions are what make the session
+ * reprocessable. Discarding raw would be irreversible once the hand is gone —
+ * it would foreclose jittering in landmark space (where tracking noise actually
+ * lives, and where it is correlated across landmarks), re-normalizing against a
+ * different basis if wrist->middleKnuckle proves weak, validating
+ * normalizeLandmarks against real hands instead of synthetic input, and any
+ * augmentation. 78 extra floats per sample is nothing against those options.
+ */
+type Sample = {
+  /** 78-dim normalized feature vector — what the classifier sees. */
+  normalized: number[]
+  /**
+   * 78 raw world-space coordinates, x/y/z per landmark in LANDMARK_ORDER,
+   * centimetres, exactly as SIK reported them. Null only for samples restored
+   * from a pre-v2 session, which predate raw capture.
+   */
+  raw: number[] | null
+}
 
 /** Key prefix for per-letter persistence in persistentStorageSystem. */
 const STORE_PREFIX = "tpl_"
@@ -97,6 +154,12 @@ export class TemplateRecorder extends BaseScriptComponent {
   @input
   @hint("How many samples to capture per letter. 5-10 is a reasonable range.")
   samplesPerLetter: number = 5
+
+  @input
+  @hint(
+    "Non-letter poses to capture after the letters, under the reserved _NEGATIVE key. They are NOT templates — they calibrate the rejection distance. 0 skips the phase; ~30 is a good target."
+  )
+  negativeSampleCount: number = 30
 
   @input
   @hint("Large text the operator reads. Shows the target letter, the counter, and the RECORDED confirmation.")
@@ -141,8 +204,8 @@ export class TemplateRecorder extends BaseScriptComponent {
   private signing: BaseHand
   private trigger: BaseHand
 
-  /** letter -> array of samples, each a plain number[] of length FEATURE_DIM. */
-  private samples: {[letter: string]: number[][]} = {}
+  /** letter -> captured samples, each holding both representations. */
+  private samples: {[letter: string]: Sample[]} = {}
 
   private letterList: string[] = []
   private letterIndex = 0
@@ -161,6 +224,9 @@ export class TemplateRecorder extends BaseScriptComponent {
   private reformSatisfied = true
   private liveDistance = 0
 
+  /** So the storage-pressure warning fires once, not on every capture. */
+  private storageWarningShown = false
+
   /** Reused so the per-frame paths do not allocate. */
   private scratch = new Float32Array(FEATURE_DIM)
   private scratchLive = new Float32Array(FEATURE_DIM)
@@ -178,6 +244,11 @@ export class TemplateRecorder extends BaseScriptComponent {
     }
     if (this.samplesPerLetter < 1) {
       this.samplesPerLetter = 1
+    }
+    // Appended after parseLetters, never through it — parseLetters splits into
+    // single characters, which would shred a multi-character reserved key.
+    if (this.negativeSampleCount > 0) {
+      this.letterList.push(NEGATIVE_KEY)
     }
 
     for (let i = 0; i < this.letterList.length; i++) {
@@ -346,7 +417,18 @@ export class TemplateRecorder extends BaseScriptComponent {
       return
     }
 
-    const vector = normalizeTrackedHand(this.signing, this.scratch)
+    // Read the landmarks ONCE and derive both representations from that single
+    // read, so the raw positions and the feature vector provably describe the
+    // same instant rather than two reads that merely ought to agree.
+    const positions = pointsFromTrackedHand(this.signing)
+    if (positions === null) {
+      this.state = "waiting"
+      this.setText(letter + "\n\nNO HAND SEEN\nHold your " + this.signingHand + " hand up, then pinch again.")
+      print("TemplateRecorder: capture skipped for " + letter + " — landmarks unavailable.")
+      return
+    }
+
+    const vector = normalizeLandmarks(positions, {mirror: this.signingHand === "left", out: this.scratch})
     if (vector === null) {
       this.state = "waiting"
       this.setText(letter + "\n\nPOSE UNREADABLE\nOpen your hand slightly and pinch again.")
@@ -358,26 +440,40 @@ export class TemplateRecorder extends BaseScriptComponent {
     this.lastCaptureFrame = this.frameCounter
 
     // scratch is reused every frame, so copy before storing.
-    const stored: number[] = new Array(FEATURE_DIM)
+    const normalized: number[] = new Array(FEATURE_DIM)
     for (let i = 0; i < FEATURE_DIM; i++) {
-      stored[i] = Math.round(vector[i] * ROUND_FACTOR) / ROUND_FACTOR
+      normalized[i] = Math.round(vector[i] * ROUND_FACTOR) / ROUND_FACTOR
     }
-    this.samples[letter].push(stored)
+
+    // Raw world-space positions, flattened x/y/z per landmark. Stored
+    // unmodified — no mirroring, no wrist offset, no scaling — so every
+    // downstream reprocessing choice stays open.
+    const raw: number[] = new Array(RAW_DIM)
+    for (let i = 0; i < LANDMARK_COUNT; i++) {
+      const p = positions[i]
+      const o = i * 3
+      raw[o] = Math.round(p.x * ROUND_FACTOR) / ROUND_FACTOR
+      raw[o + 1] = Math.round(p.y * ROUND_FACTOR) / ROUND_FACTOR
+      raw[o + 2] = Math.round(p.z * ROUND_FACTOR) / ROUND_FACTOR
+    }
+
+    this.samples[letter].push({normalized: normalized, raw: raw})
 
     // Arm the re-form gate against exactly what was stored.
     if (this.lastCapturedVector === null) {
       this.lastCapturedVector = new Float32Array(FEATURE_DIM)
     }
     for (let i = 0; i < FEATURE_DIM; i++) {
-      this.lastCapturedVector[i] = stored[i]
+      this.lastCapturedVector[i] = normalized[i]
     }
     this.reformSatisfied = false
     this.liveDistance = 0
 
     const count = this.samples[letter].length
+    const target = this.targetFor(letter)
     this.saveLetterToStorage(letter)
 
-    print("TemplateRecorder: RECORDED " + letter + " sample " + count + "/" + this.samplesPerLetter)
+    print("TemplateRecorder: RECORDED " + letter + " sample " + count + "/" + target)
     if (this.confirmAudio) {
       this.confirmAudio.play(1)
     }
@@ -385,12 +481,15 @@ export class TemplateRecorder extends BaseScriptComponent {
     this.state = "confirming"
     this.timer = CONFIRM_SECONDS
 
-    if (count >= this.samplesPerLetter) {
-      this.setText(letter + "\n\nRECORDED  " + count + "/" + this.samplesPerLetter + "\nLETTER COMPLETE")
+    const title = letter === NEGATIVE_KEY ? "NON-LETTER" : letter
+    if (count >= target) {
+      this.setText(
+        title + "\n\nRECORDED  " + count + "/" + target + (letter === NEGATIVE_KEY ? "\nPHASE COMPLETE" : "\nLETTER COMPLETE")
+      )
       this.checkLetterQuality(letter)
       this.advanceLetter()
     } else {
-      this.setText(letter + "\n\nRECORDED  " + count + "/" + this.samplesPerLetter)
+      this.setText(title + "\n\nRECORDED  " + count + "/" + target)
     }
   }
 
@@ -410,7 +509,16 @@ export class TemplateRecorder extends BaseScriptComponent {
 
   private onAllComplete() {
     const total = this.totalSamples()
-    this.setText("ALL DONE\n\n" + total + " samples\nacross " + this.letterList.length + " letters")
+    const negatives = this.samples[NEGATIVE_KEY] ? this.samples[NEGATIVE_KEY].length : 0
+    const letterCount = this.letterList.length - (this.negativeSampleCount > 0 ? 1 : 0)
+    this.setText(
+      "ALL DONE\n\n" +
+        total +
+        " samples\n" +
+        letterCount +
+        " letters" +
+        (negatives > 0 ? "\n+ " + negatives + " non-letter" : "")
+    )
     print("TemplateRecorder: all letters complete.")
     this.dumpTemplates()
   }
@@ -424,7 +532,7 @@ export class TemplateRecorder extends BaseScriptComponent {
    * denominator of the Fisher ratio — if it is near zero, every ratio computed
    * from this data will be inflated.
    */
-  private withinLetterVariance(list: number[][]): number {
+  private withinLetterVariance(list: Sample[]): number {
     const n = list ? list.length : 0
     if (n < 2) {
       return 0
@@ -433,12 +541,12 @@ export class TemplateRecorder extends BaseScriptComponent {
     for (let d = 0; d < FEATURE_DIM; d++) {
       let sum = 0
       for (let s = 0; s < n; s++) {
-        sum += list[s][d]
+        sum += list[s].normalized[d]
       }
       const mean = sum / n
       let sq = 0
       for (let s = 0; s < n; s++) {
-        const e = list[s][d] - mean
+        const e = list[s].normalized[d] - mean
         sq += e * e
       }
       total += sq / (n - 1)
@@ -452,6 +560,21 @@ export class TemplateRecorder extends BaseScriptComponent {
       return
     }
     const variance = this.withinLetterVariance(list)
+    if (letter === NEGATIVE_KEY) {
+      // Negatives are deliberately dissimilar poses, so their spread should be
+      // LARGE. A small one means the same non-letter pose was captured over and
+      // over, which cannot bound a rejection distance.
+      print("TemplateRecorder: " + NEGATIVE_KEY + " within-set variance " + variance.toExponential(3) + ".")
+      if (variance <= WITHIN_VARIANCE_WARN) {
+        print(
+          "TemplateRecorder WARNING: " +
+            NEGATIVE_KEY +
+            " samples are near-identical. Negatives must span rest, transitions, flat palm, pointing " +
+            "and fist — one repeated pose calibrates nothing."
+        )
+      }
+      return
+    }
     if (variance <= WITHIN_VARIANCE_WARN) {
       print(
         "TemplateRecorder WARNING: letter " +
@@ -490,7 +613,7 @@ export class TemplateRecorder extends BaseScriptComponent {
       this.lastCapturedVector = null
       this.reformSatisfied = true
     } else {
-      const tail = list[list.length - 1]
+      const tail = list[list.length - 1].normalized
       if (this.lastCapturedVector === null) {
         this.lastCapturedVector = new Float32Array(FEATURE_DIM)
       }
@@ -500,10 +623,11 @@ export class TemplateRecorder extends BaseScriptComponent {
       this.reformSatisfied = false
     }
     this.liveDistance = 0
-    print("TemplateRecorder: undo — " + letter + " now at " + list.length + "/" + this.samplesPerLetter)
+    const target = this.targetFor(letter)
+    print("TemplateRecorder: undo — " + letter + " now at " + list.length + "/" + target)
     this.state = "confirming"
     this.timer = CONFIRM_SECONDS
-    this.setText(letter + "\n\nUNDONE\n" + list.length + "/" + this.samplesPerLetter)
+    this.setText((letter === NEGATIVE_KEY ? "NON-LETTER" : letter) + "\n\nUNDONE\n" + list.length + "/" + target)
   }
 
   /** Skip the current letter and move on. Leaves whatever was captured. */
@@ -536,17 +660,26 @@ export class TemplateRecorder extends BaseScriptComponent {
           mirrored: this.signingHand === "left",
           reformRequired: this.requireReformBetweenSamples,
           reformThreshold: this.reformThreshold,
+          rawUnits: "cm_world",
+          negativeKey: NEGATIVE_KEY,
+          negativeCount: this.samples[NEGATIVE_KEY] ? this.samples[NEGATIVE_KEY].length : 0,
           letters: order,
           landmarkOrder: LANDMARK_ORDER
         })
     )
-    // One line per sample. A single 78-float line is ~550 chars, which stays
-    // well inside log line limits; one blob for the whole set would not.
+    // One line per sample per representation. Raw and normalized are emitted
+    // on SEPARATE lines: combined they would run past 1300 chars, where a
+    // single 78-float line stays around 550-800 and safely inside log limits.
+    //   TPL|<letter>|<index>|<78 normalized>
+    //   TPLRAW|<letter>|<index>|<78 raw world x,y,z per landmark, cm>
     for (let i = 0; i < order.length; i++) {
       const letter = order[i]
       const list = this.samples[letter]
       for (let s = 0; s < list.length; s++) {
-        print("TPL|" + letter + "|" + s + "|" + list[s].join(","))
+        print("TPL|" + letter + "|" + s + "|" + list[s].normalized.join(","))
+        if (list[s].raw !== null) {
+          print("TPLRAW|" + letter + "|" + s + "|" + list[s].raw.join(","))
+        }
       }
     }
     print("TEMPLATES_END")
@@ -575,6 +708,55 @@ export class TemplateRecorder extends BaseScriptComponent {
           "any threshold."
       )
     }
+
+    // Self-calibrating diversity check: negatives are deliberately different
+    // poses, so they must vary MORE than repeats of a single letter do. No
+    // magic number needed — the letters supply the reference.
+    const negatives = this.samples[NEGATIVE_KEY]
+    if (negatives && negatives.length >= 2) {
+      const negativeVariance = this.withinLetterVariance(negatives)
+      let letterTotal = 0
+      let letterCount = 0
+      for (let i = 0; i < order.length; i++) {
+        const key = order[i]
+        if (key === NEGATIVE_KEY) {
+          continue
+        }
+        const list = this.samples[key]
+        if (list && list.length >= 2) {
+          letterTotal += this.withinLetterVariance(list)
+          letterCount++
+        }
+      }
+      if (letterCount > 0) {
+        const meanLetterVariance = letterTotal / letterCount
+        print(
+          "TPLNEG|" +
+            negatives.length +
+            "|" +
+            negativeVariance.toExponential(4) +
+            "|meanLetterVar=" +
+            meanLetterVariance.toExponential(4)
+        )
+        if (negativeVariance <= meanLetterVariance) {
+          print(
+            "TemplateRecorder WARNING: negative samples vary no more than repeats of a single letter " +
+              "(" +
+              negativeVariance.toExponential(3) +
+              " vs " +
+              meanLetterVariance.toExponential(3) +
+              "). They are meant to span rest, transitions, flat palm, pointing and fist. As recorded " +
+              "they will under-estimate how close a non-letter pose can get, giving a maxDistance that " +
+              "is too tight."
+          )
+        }
+      }
+    } else if (this.negativeSampleCount > 0) {
+      print(
+        "TemplateRecorder: no negative samples captured. maxDistance cannot be calibrated from this " +
+          "run — it would have to be guessed."
+      )
+    }
     print(
       "TemplateRecorder: " + this.totalSamples() + " samples emitted. Copy the block above into Assets/Data/templates.json."
     )
@@ -590,12 +772,39 @@ export class TemplateRecorder extends BaseScriptComponent {
       store.putString(STORE_PREFIX + letter, JSON.stringify(this.samples[letter]))
     } catch (e) {
       print("TemplateRecorder: could not persist " + letter + " (" + e + "). In-memory samples are unaffected.")
+      return
+    }
+
+    // Keeping raw positions roughly doubles the stored bytes, so the cap is now
+    // worth watching. Warn once per crossing rather than every capture.
+    try {
+      const used = store.getSizeInBytes()
+      const max = store.getMaxSizeInBytes()
+      if (max > 0) {
+        const fraction = used / max
+        if (fraction >= 0.8 && !this.storageWarningShown) {
+          this.storageWarningShown = true
+          print(
+            "TemplateRecorder WARNING: persistent storage is " +
+              Math.round(fraction * 100) +
+              "% full (" +
+              used +
+              " / " +
+              max +
+              " bytes). Crash-resume may stop working before the run ends. The log dump is " +
+              "unaffected — call dumpTemplates() early and often to be safe."
+          )
+        }
+      }
+    } catch (e) {
+      // Size reporting is advisory; never let it break a capture.
     }
   }
 
   private loadFromStorage() {
     const store = global.persistentStorageSystem.store
     let restored = 0
+    let legacy = 0
     for (let i = 0; i < this.letterList.length; i++) {
       const letter = this.letterList[i]
       const key = STORE_PREFIX + letter
@@ -605,11 +814,27 @@ export class TemplateRecorder extends BaseScriptComponent {
       try {
         const parsed = JSON.parse(store.getString(key))
         if (parsed && parsed.length !== undefined) {
-          // Drop anything whose width does not match the current feature layout.
-          const valid: number[][] = []
+          const valid: Sample[] = []
           for (let s = 0; s < parsed.length; s++) {
-            if (parsed[s] && parsed[s].length === FEATURE_DIM) {
-              valid.push(parsed[s])
+            const entry = parsed[s]
+            if (!entry) {
+              continue
+            }
+            if (entry.length !== undefined) {
+              // Pre-v2 shape: a bare normalized vector, no raw positions.
+              if (entry.length === FEATURE_DIM) {
+                valid.push({normalized: entry, raw: null})
+                legacy++
+              }
+              continue
+            }
+            // v2 shape. Drop anything whose width does not match the layout.
+            if (entry.normalized && entry.normalized.length === FEATURE_DIM) {
+              const raw = entry.raw && entry.raw.length === RAW_DIM ? entry.raw : null
+              if (raw === null) {
+                legacy++
+              }
+              valid.push({normalized: entry.normalized, raw: raw})
             }
           }
           this.samples[letter] = valid
@@ -621,6 +846,16 @@ export class TemplateRecorder extends BaseScriptComponent {
     }
     if (restored > 0) {
       print("TemplateRecorder: resumed previous session — " + restored + " samples restored.")
+    }
+    if (legacy > 0) {
+      print(
+        "TemplateRecorder WARNING: " +
+          legacy +
+          " restored sample(s) have no raw landmark positions — they predate format v" +
+          TEMPLATE_FORMAT_VERSION +
+          ". They still work for classification, but cannot be re-normalized, jittered in landmark " +
+          "space, or augmented. Re-record them if you want those options."
+      )
     }
   }
 
@@ -652,6 +887,9 @@ export class TemplateRecorder extends BaseScriptComponent {
         this.triggerHand +
         " hand" +
         (this.captureDelaySeconds > 0 ? " (capture delayed " + this.captureDelaySeconds + "s)" : "") +
+        (this.negativeSampleCount > 0
+          ? ", then " + this.negativeSampleCount + " non-letter samples under " + NEGATIVE_KEY
+          : "") +
         ". Re-form gate " +
         (this.requireReformBetweenSamples ? "ON at " + this.reformThreshold : "OFF") +
         ". JSON is printed between TEMPLATES_BEGIN and TEMPLATES_END when done."
@@ -661,16 +899,19 @@ export class TemplateRecorder extends BaseScriptComponent {
   private refreshPrompt() {
     const letter = this.currentLetter()
     const count = this.samples[letter] ? this.samples[letter].length : 0
+    const target = this.targetFor(letter)
     const remaining = this.letterList.length - this.letterIndex
+    const negative = this.isNegativePhase()
+    const title = negative ? "NON-LETTER" : letter
 
     if (!this.isReformSatisfied()) {
       this.setText(
-        letter +
+        title +
           "\n\n" +
           count +
           " / " +
-          this.samplesPerLetter +
-          "\nRE-FORM THE LETTER\n(" +
+          target +
+          (negative ? "\nCHANGE THE POSE\n(" : "\nRE-FORM THE LETTER\n(") +
           this.liveDistance.toFixed(2) +
           " / " +
           this.reformThreshold.toFixed(2) +
@@ -679,12 +920,28 @@ export class TemplateRecorder extends BaseScriptComponent {
       return
     }
 
+    if (negative) {
+      this.setText(
+        title +
+          "\n\n" +
+          count +
+          " / " +
+          target +
+          "\n\n" +
+          this.negativePrompt(count) +
+          "\n\nPinch " +
+          this.triggerHand +
+          " to record"
+      )
+      return
+    }
+
     this.setText(
-      letter +
+      title +
         "\n\n" +
         count +
         " / " +
-        this.samplesPerLetter +
+        target +
         "\nPinch " +
         this.triggerHand +
         " to record\n(" +
@@ -707,10 +964,25 @@ export class TemplateRecorder extends BaseScriptComponent {
     return this.letterList[this.letterIndex]
   }
 
+  /** Target sample count for a key — negatives have their own quota. */
+  private targetFor(key: string): number {
+    return key === NEGATIVE_KEY ? this.negativeSampleCount : this.samplesPerLetter
+  }
+
+  private isNegativePhase(): boolean {
+    return this.currentLetter() === NEGATIVE_KEY
+  }
+
+  /** What the operator is asked to do for the next negative sample. */
+  private negativePrompt(sampleIndex: number): string {
+    return NEGATIVE_PROMPTS[sampleIndex % NEGATIVE_PROMPTS.length]
+  }
+
   private firstIncompleteIndex(): number {
     for (let i = 0; i < this.letterList.length; i++) {
-      const list = this.samples[this.letterList[i]]
-      if (!list || list.length < this.samplesPerLetter) {
+      const key = this.letterList[i]
+      const list = this.samples[key]
+      if (!list || list.length < this.targetFor(key)) {
         return i
       }
     }

@@ -31,6 +31,8 @@
     captureDelaySeconds: false
     confirmAudio: false
     letters: false
+    reformThreshold: false
+    requireReformBetweenSamples: false
     resumePreviousSession: false
     samplesPerLetter: false
     signingHand: false
@@ -51,6 +53,8 @@
       signingHand: right
       triggerHand: left
       captureDelaySeconds: !<float> 0.000000
+      requireReformBetweenSamples: true
+      reformThreshold: 0.600000
       confirmAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
       resumePreviousSession: true
   ScriptTypes:
@@ -63,5 +67,7 @@
     - '// @input string signingHand = "right" {"hint":"The hand that FORMS the letter. Its landmarks are what get recorded.", "widget":"combobox", "values":[{"label":"right", "value":"right"}, {"label":"left", "value":"left"}]}'
     - '// @input string triggerHand = "left" {"hint":"The hand that PINCHES to trigger a capture. Keep it different from signingHand — see the header comment.", "widget":"combobox", "values":[{"label":"left", "value":"left"}, {"label":"right", "value":"right"}]}'
     - '// @input float captureDelaySeconds {"hint":"Seconds between the pinch and the capture. 0 = instant (two-hand mode). Set 2-3 for one-handed recording."}'
+    - '// @input bool requireReformBetweenSamples = true {"hint":"Require the hand to leave the pose between samples. Leave ON — turning it off makes within-letter variance measure sensor noise only, which inflates Fisher ratios."}'
+    - '// @input float reformThreshold = 0.6 {"hint":"How far the live pose must move from the last capture before the next sample is accepted (Euclidean, normalized units). The live value is shown on screen — tune from what real re-forming produces."}'
     - '// @input Component.AudioComponent confirmAudio {"hint":"Optional. Plays on each successful capture — useful when the operator is watching their hands, not the text."}'
     - '// @input bool resumePreviousSession = true {"hint":"Reload samples saved in a previous session. Turn OFF to start a clean recording run."}'

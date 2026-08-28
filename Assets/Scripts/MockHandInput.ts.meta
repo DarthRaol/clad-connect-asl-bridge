@@ -1,0 +1,64 @@
+- !<AssetImportMetadata/25ec227e-3f3f-40db-8f27-f6c2cafba7e0>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 9cd35e7c-5e67-4bc7-8a86-0d83aa0768d0
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 9cd35e7c-5e67-4bc7-8a86-0d83aa0768d0
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 08cb390e-0103-456f-a3b2-43dbce1a22b7
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/08cb390e-0103-456f-a3b2-43dbce1a22b7>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 0abd6ea4-0921-4c6f-9980-c29f7c2fc618
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    autoAdvance: false
+    jitterSigma: false
+    loopSequence: false
+    makeActive: false
+    preserveStructuralDims: false
+    randomSeed: false
+    statusText: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - makeActive: true
+      autoAdvance: true
+      loopSequence: true
+      jitterSigma: !<float> 0.000000
+      randomSeed: !<float> 1.000000
+      preserveStructuralDims: true
+      statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @input bool makeActive = true {"hint":"Register as the active feature source on start, so consumers pick this up automatically."}'
+    - '// @input bool autoAdvance = true {"hint":"Advance one step-frame per UpdateEvent. Turn OFF to drive manually with advanceFrame() from a test."}'
+    - '// @input bool loopSequence = true {"hint":"Restart the sequence from the beginning when it ends."}'
+    - '// @input float jitterSigma {"hint":"Standard deviation of gaussian noise added per dimension, in normalized units. 0 disables jitter."}'
+    - '// @input float randomSeed = 1 {"hint":"Seed for the noise generator. Same seed plus same sequence replays identically."}'
+    - '// @input bool preserveStructuralDims = true {"hint":"Leave the 6 structurally-constant dims un-jittered, keeping output on the valid manifold. Recommended ON."}'
+    - '// @input Component.Text statusText {"hint":"Optional. Shows the current step label and frame, so preview state is visible at a glance."}'

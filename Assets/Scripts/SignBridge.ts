@@ -1,0 +1,494 @@
+/**
+ * SignBridge — the end-to-end driver.
+ *
+ * One frame of the pipeline:
+ *
+ *   HandFeatureSource  (mock in Editor, live SIK on device)
+ *     -> Classifier.classifyFrom   -> {letter, confidence, distance}
+ *     -> HoldBuffer.push           -> a committed letter, or null
+ *     -> PhraseController.submit   -> correct / wrong / ignored
+ *     -> one SignPanelView
+ *     -> updateSignPanels([inward, outward], view)
+ *
+ * plus PhraseController.update(getDeltaTime()) to drive the wrong-letter flash
+ * expiry and the optional auto-advance.
+ *
+ * The view is built ONCE and handed to both panels, so the inward (signer) and
+ * outward (reader) surfaces cannot disagree.
+ */
+
+import {HandInputData} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/HandInputData"
+import type {BaseHand} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/BaseHand"
+import type {HandType} from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/HandType"
+import {Classifier, ClassifierMode} from "./Classifier"
+import {HoldBuffer} from "./HoldBuffer"
+import {makeWeights} from "./LandmarkCapture"
+import {
+  getActiveHandFeatureSource,
+  HandFeatureSource,
+  LiveHandFeatureSource,
+  MockHandInput,
+  MockPoseStep
+} from "./MockHandInput"
+import {PhraseController} from "./PhraseController"
+import {SignPanel, SignPanelView, updateSignPanels} from "./SignPanel"
+import {extractNormalized, TemplatesFile} from "./TemplateFormat"
+
+/** One step of a scripted mock playback. See SignBridge.playScript(). */
+export type BridgeScriptStep = {
+  /** Letter to emit, or null for an untracked frame. */
+  letter: string | null
+  /** Blend toward this second letter — used to manufacture low confidence. */
+  blendWith?: string
+  /** Blend factor 0..1. 0.5 sits equidistant, so the margin collapses to ~0. */
+  blend?: number
+  /** Scale the pose away from every template, to fail an absolute distance gate. */
+  farScale?: number
+  /** How many frames to hold this step. */
+  frames: number
+}
+
+@component
+export class SignBridge extends BaseScriptComponent {
+  @ui.label("<b>Sign Bridge</b> — hand → classifier → hold → phrase → panels")
+  @ui.separator
+  @ui.group_start("Wiring")
+  @input
+  @hint("templates.json, recorded by TemplateRecorder. Without it nothing can be classified.")
+  templatesAsset: Asset
+
+  @input
+  @hint("Signer-facing panel: target word, confidence bar, wrong-letter flash.")
+  inwardPanel: SignPanel
+
+  @input
+  @hint("Reader-facing panel: the assembled text.")
+  outwardPanel: SignPanel
+
+  @input
+  @allowUndefined
+  @hint("Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware.")
+  mockHandInput: MockHandInput
+  @ui.group_end
+  @ui.group_start("Classifier")
+  @input
+  @widget(new ComboBoxWidget([new ComboBoxItem("full"), new ComboBoxItem("reduced")]))
+  @hint("Feature space distances are computed in. 'full' = 78 dims, 'reduced' = 57.")
+  featureMode: string = "full"
+
+  @input
+  @widget(new SliderWidget(1, 5, 1))
+  @hint("How many of a letter's nearest templates to average into its score.")
+  k: number = 1
+
+  @input
+  @widget(new SliderWidget(1, 4, 0.25))
+  @hint("Weight on the thumb landmarks — the M/N/S/T separator. 1 = uniform. Remember weights hit SQUARED distance, so 2 is 4x the influence.")
+  thumbWeight: number = 1
+  @ui.group_end
+  @ui.group_start("Hold buffer")
+  @input
+  @widget(new SliderWidget(6, 40, 1))
+  @hint("Window length in frames. 18 is about 0.6s at 30fps.")
+  windowFrames: number = 18
+
+  @input
+  @widget(new SliderWidget(0, 1, 0.05))
+  @hint("Mean confidence the winning letter must reach. PROVISIONAL until set from real data.")
+  minMeanConfidence: number = 0.3
+
+  @input
+  @widget(new SliderWidget(0, 10, 0.1))
+  @hint("Max template distance for a frame to count as a letter. 0 DISABLES the gate — calibrate from the _NEGATIVE separation.")
+  maxDistance: number = 0
+
+  @input
+  @widget(new SliderWidget(1, 10, 1))
+  @hint("Consecutive non-matching frames needed to re-arm after a commit. Separates a deliberate bounce from a one-frame glitch.")
+  rearmFrames: number = 3
+  @ui.group_end
+  @ui.group_start("Session")
+  @input
+  @widget(new ComboBoxWidget([new ComboBoxItem("right"), new ComboBoxItem("left")]))
+  @hint("The hand that signs. Ignored while a MockHandInput is the active source.")
+  signingHand: string = "right"
+
+  @input
+  @hint("Log a line on every commit, wrong letter and phrase completion.")
+  verbose: boolean = true
+  @ui.group_end
+  private handProvider = HandInputData.getInstance()
+  private hand!: BaseHand
+  private liveSource!: HandFeatureSource
+
+  private classifier!: Classifier
+  private holdBuffer!: HoldBuffer
+  private phrases!: PhraseController
+
+  /** Kept so playScript() can rebuild poses by letter name. */
+  private templates: TemplatesFile | null = null
+
+  private ready = false
+
+  onAwake() {
+    // getHand belongs in onAwake. Nothing here subscribes to a SIK event, so
+    // there is no .add() that needs deferring to OnStartEvent.
+    this.hand = this.handProvider.getHand(this.signingHand as HandType)
+    this.liveSource = new LiveHandFeatureSource(this.hand)
+
+    this.classifier = new Classifier({
+      mode: this.featureMode as ClassifierMode,
+      weights: this.thumbWeight !== 1 ? makeWeights({thumb: this.thumbWeight}) : null,
+      k: this.k
+    })
+
+    this.holdBuffer = new HoldBuffer({
+      capacity: this.windowFrames,
+      minMeanConfidence: this.minMeanConfidence,
+      // 0 in the Inspector means "no calibrated value yet" — pass Infinity so
+      // HoldBuffer emits its own unset-gate warning rather than silently
+      // rejecting every frame against a maxDistance of zero.
+      maxDistance: this.maxDistance > 0 ? this.maxDistance : Infinity,
+      rearmFrames: this.rearmFrames
+    })
+
+    this.phrases = new PhraseController()
+
+    this.createEvent("OnStartEvent").bind(() => {
+      this.loadTemplates()
+      this.logConfiguration()
+    })
+
+    this.createEvent("UpdateEvent").bind(() => {
+      this.onUpdate()
+    })
+  }
+
+  // -------------------------------------------------------------------------
+  // Setup
+  // -------------------------------------------------------------------------
+
+  private loadTemplates(): void {
+    if (!this.templatesAsset) {
+      print("SignBridge ERROR: no templatesAsset wired. Nothing can be classified.")
+      return
+    }
+
+    let parsed: TemplatesFile
+    try {
+      const json = (this.templatesAsset as JsonAsset).getString()
+      parsed = JSON.parse(json) as TemplatesFile
+    } catch (e) {
+      print("SignBridge ERROR: could not read templatesAsset (" + e + ").")
+      return
+    }
+
+    this.templates = parsed
+    const report = this.classifier.loadTemplates(parsed)
+    print(
+      "SignBridge: loaded " +
+        report.letters +
+        " letters / " +
+        report.samples +
+        " samples (" +
+        this.classifier.describe() +
+        ")."
+    )
+
+    if (report.letters === 0) {
+      print(
+        "SignBridge ERROR: templates.json contains no letters. Run TemplateRecorder on hardware first — " +
+          "classify() will return null on every frame until it does."
+      )
+      return
+    }
+
+    // Refuse phrases the classifier cannot actually complete (J/Z are motion
+    // letters and are never in a recorded set).
+    this.phrases.setAvailableLetters(this.classifier.loadedLetters())
+    const signable = this.phrases.signablePhrases()
+    if (signable.length === 0) {
+      print("SignBridge ERROR: no preset phrase is signable with the loaded letters.")
+      return
+    }
+    this.phrases.setPhrases(signable)
+
+    // Drive the mock from the same templates, so the Editor replays the exact
+    // poses the classifier was loaded with.
+    if (this.mockHandInput) {
+      this.mockHandInput.loadFromTemplates(parsed, {framesPerPose: 30, gapFrames: 12})
+    }
+
+    this.ready = true
+  }
+
+  private logConfiguration(): void {
+    print("SignBridge: " + this.holdBuffer.describe())
+    print("SignBridge: phrase " + this.phrases.describe())
+    const source = getActiveHandFeatureSource()
+    print("SignBridge: feature source = " + (source !== null ? "MOCK (" + source.currentLabel() + ")" : "live SIK"))
+  }
+
+  // -------------------------------------------------------------------------
+  // The frame
+  // -------------------------------------------------------------------------
+
+  private onUpdate(): void {
+    // Timed transitions run even before templates load, so a misconfigured
+    // session still shows a stable panel instead of a frozen one.
+    this.phrases.update(getDeltaTime())
+
+    if (this.ready) {
+      // Resolved per frame rather than cached: MockHandInput registers itself
+      // during ITS OnStartEvent, and script start order follows scene hierarchy
+      // order, which this script must not depend on. Reading the module-level
+      // active source costs nothing and allocates nothing — unlike calling
+      // resolveHandFeatureSource(), which builds a LiveHandFeatureSource on
+      // every miss.
+      const active = getActiveHandFeatureSource()
+      const source: HandFeatureSource = active !== null ? active : this.liveSource
+
+      const result = this.classifier.classifyFrom(source)
+      const committed = this.holdBuffer.push(result)
+
+      if (committed !== null) {
+        const outcome = this.phrases.submit(committed)
+        if (this.verbose) {
+          const state = this.phrases.getState()
+          if (outcome === "wrong") {
+            print("SignBridge: WRONG — signed " + committed + ", expected " + state.currentLetter)
+          } else if (outcome === "correct") {
+            print("SignBridge: committed " + committed + " (" + Math.round(state.progress * 100) + "%)")
+          }
+        }
+      }
+    }
+
+    updateSignPanels([this.inwardPanel, this.outwardPanel], this.buildView())
+  }
+
+  /** One view, both panels — the reason they cannot drift. */
+  private buildView(): SignPanelView {
+    const phraseState = this.phrases.getState()
+    const holdState = this.holdBuffer.getState()
+    const isWrong = phraseState.status === "wrong"
+
+    return {
+      phrase: phraseState.phrase,
+      letterStatus: phraseState.letterStatus,
+      assembled: this.buildAssembled(phraseState.phrase, phraseState.letterStatus),
+      progress: holdState.progress,
+      candidate: holdState.candidate,
+      wrongSigned: isWrong ? phraseState.wrongLetter : null,
+      wrongExpected: isWrong ? phraseState.currentLetter : null
+    }
+  }
+
+  /**
+   * What the reader sees: everything resolved so far. A skipped letter is still
+   * shown — the reader wants the word, not an audit of how it was produced.
+   */
+  private buildAssembled(phrase: string, letterStatus: string[]): string {
+    let out = ""
+    for (let i = 0; i < phrase.length; i++) {
+      const status = i < letterStatus.length ? letterStatus[i] : "pending"
+      if (status === "done" || status === "skipped") {
+        out += phrase[i]
+      } else if (status === "unsignable") {
+        // Spaces are only carried once something after them has been signed.
+        out += phrase[i]
+      } else {
+        break
+      }
+    }
+    return out
+  }
+
+  // -------------------------------------------------------------------------
+  // Test surface — read-only state, plus deterministic mock playback
+  //
+  // This Lens has no interactables, so LEAF scenarios cannot drive it by
+  // tapping anything. They drive the feature source and assert on state
+  // instead, which is what these expose. Nothing here changes behaviour:
+  // the getters return the same objects the panels already render from, and
+  // playScript() only reconfigures the mock that is already the active source
+  // in the Editor.
+  // -------------------------------------------------------------------------
+
+  /** Current phrase state — the object the panels render from. */
+  getPhraseState() {
+    return this.phrases.getState()
+  }
+
+  /** Current hold-buffer state, including progress and the re-arm run. */
+  getHoldState() {
+    return this.holdBuffer.getState()
+  }
+
+  /** The exact view handed to both panels this frame. */
+  getView(): SignPanelView {
+    return this.buildView()
+  }
+
+  /** False until templates load; every classify() returns null before then. */
+  isReady(): boolean {
+    return this.ready
+  }
+
+  /**
+   * Rebuild the hold buffer with a different rejection distance.
+   *
+   * Needed to exercise the rejected-frame path at all: the gate is disabled by
+   * default (Infinity), so without this no frame can ever be rejected.
+   * Pass 0 or a negative value to disable it again.
+   */
+  setMaxDistance(maxDistance: number): void {
+    this.holdBuffer = new HoldBuffer({
+      capacity: this.windowFrames,
+      minMeanConfidence: this.minMeanConfidence,
+      maxDistance: maxDistance > 0 ? maxDistance : Infinity,
+      rearmFrames: this.rearmFrames
+    })
+  }
+
+  /** Letters the classifier can actually produce. */
+  getLoadedLetters(): string[] {
+    return this.classifier.loadedLetters()
+  }
+
+  /** Euclidean distance between two letters' first templates. */
+  distanceBetween(a: string, b: string): number {
+    const pa = this.poseFor(a)
+    const pb = this.poseFor(b)
+    if (pa === null || pb === null) {
+      return Infinity
+    }
+    let sum = 0
+    for (let d = 0; d < pa.length && d < pb.length; d++) {
+      const diff = pa[d] - pb[d]
+      sum += diff * diff
+    }
+    return Math.sqrt(sum)
+  }
+
+  /** Distance from a letter's first template to its nearest other letter. */
+  nearestOtherDistance(letter: string): number {
+    let best = Infinity
+    const letters = this.classifier.loadedLetters()
+    for (let i = 0; i < letters.length; i++) {
+      if (letters[i] === letter) {
+        continue
+      }
+      const dist = this.distanceBetween(letter, letters[i])
+      if (dist < best) {
+        best = dist
+      }
+    }
+    return best
+  }
+
+  /**
+   * Drive the mock through an explicit script. Non-looping, so it ends in a
+   * known state rather than wrapping mid-assertion.
+   *
+   * @returns false if the mock is absent or a named letter has no template
+   */
+  playScript(steps: BridgeScriptStep[]): boolean {
+    if (!this.mockHandInput || !steps || steps.length === 0) {
+      return false
+    }
+
+    const built: MockPoseStep[] = []
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i]
+      const frames = step.frames > 0 ? step.frames : 1
+
+      if (step.letter === null) {
+        built.push({label: "gap", features: null, frames: frames})
+        continue
+      }
+
+      const base = this.poseFor(step.letter)
+      if (base === null) {
+        print("SignBridge.playScript: no template for '" + step.letter + "'.")
+        return false
+      }
+
+      let features = base
+      let label = step.letter
+
+      if (step.blendWith !== undefined) {
+        const other = this.poseFor(step.blendWith)
+        if (other === null) {
+          print("SignBridge.playScript: no template for '" + step.blendWith + "'.")
+          return false
+        }
+        const t = step.blend !== undefined ? step.blend : 0.5
+        const mixed: number[] = new Array(features.length)
+        for (let d = 0; d < features.length; d++) {
+          mixed[d] = base[d] * (1 - t) + other[d] * t
+        }
+        features = mixed
+        label = step.letter + "~" + step.blendWith
+      }
+
+      if (step.farScale !== undefined && step.farScale !== 1) {
+        // Push the pose off the manifold so it fails an absolute distance gate,
+        // while leaving the structurally-constant dims alone so it stays a
+        // well-formed vector.
+        const scaled: number[] = new Array(features.length)
+        for (let d = 0; d < features.length; d++) {
+          const structural = d < 3 || (d >= 36 && d < 39)
+          scaled[d] = structural ? features[d] : features[d] * step.farScale
+        }
+        features = scaled
+        label = "far:" + label
+      }
+
+      built.push({label: label, features: features, frames: frames})
+    }
+
+    this.mockHandInput.setJitter(0)
+    this.mockHandInput.setSequence(built, false)
+    return true
+  }
+
+  /** First stored template vector for a letter, or null. */
+  private poseFor(letter: string): number[] | null {
+    if (this.templates === null || !this.templates.letters) {
+      return null
+    }
+    const samples = this.templates.letters[letter]
+    if (!samples || samples.length === 0) {
+      return null
+    }
+    const normalized = extractNormalized(samples[0])
+    if (normalized === null) {
+      return null
+    }
+    const out: number[] = new Array(normalized.length)
+    for (let i = 0; i < normalized.length; i++) {
+      out[i] = normalized[i]
+    }
+    return out
+  }
+
+  // -------------------------------------------------------------------------
+  // Public controls — wire to buttons later
+  // -------------------------------------------------------------------------
+
+  nextPhrase(): void {
+    this.phrases.nextPhrase()
+    this.holdBuffer.reset()
+  }
+
+  skipLetter(): void {
+    this.phrases.skipCurrentLetter()
+    this.holdBuffer.reset()
+  }
+
+  restart(): void {
+    this.phrases.restart()
+    this.holdBuffer.reset()
+  }
+}

@@ -1,0 +1,114 @@
+- !<AssetImportMetadata/741e5691-c330-487f-8d17-ddc499cf71a5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> afac69d5-71cf-47b0-a968-745c8309a171
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> afac69d5-71cf-47b0-a968-745c8309a171
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> d2581603-be16-40e3-93c4-7b3eeae87315
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/d2581603-be16-40e3-93c4-7b3eeae87315>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: fe2b407d-344f-4085-81d4-24293b674d19
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    assembledColor: false
+    barHeight: false
+    captionColor: false
+    currentColor: false
+    doneColor: false
+    emptyPlaceholder: false
+    faceOutward: false
+    headerLabel: false
+    padding: false
+    panelWidth: false
+    pendingColor: false
+    rowGap: false
+    showAssembledText: false
+    showConfidenceBar: false
+    showHeader: false
+    showStatusLine: false
+    showTargetWord: false
+    skippedColor: false
+    wrongColor: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - faceOutward: true
+      showHeader: true
+      showTargetWord: true
+      showAssembledText: true
+      showConfidenceBar: true
+      showStatusLine: true
+      panelWidth: !<float> 42.000000
+      rowGap: 1.600000
+      padding: 2.200000
+      barHeight: 1.200000
+      headerLabel: SIGNING
+      emptyPlaceholder: —
+      doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
+      currentColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      pendingColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.500000}
+      skippedColor: !<Vec4> {x: 0.950000, y: 0.800000, z: 0.400000, w: 1.000000}
+      wrongColor: !<Vec4> {x: 0.900000, y: 0.450000, z: 0.450000, w: 1.000000}
+      assembledColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      captionColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.550000}
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<b>Sign Panel</b> — outward-facing fingerspelling readout"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Orientation"}'
+    - '// @input bool faceOutward = true {"hint":"Rotate 180 degrees so the panel faces AWAY from the wearer. The reader is not the wearer. Turn OFF for a wearer-facing mirror of the same panel."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Sections"}'
+    - '// @input bool showHeader = true {"hint":"Show the small caption above the target word."}'
+    - '// @input bool showTargetWord = true {"hint":"Show the target word with per-character progress. Signer feedback — belongs on the INWARD panel."}'
+    - '// @input bool showAssembledText = true {"hint":"Show the assembled text. Reader-facing — belongs on the OUTWARD panel."}'
+    - '// @input bool showConfidenceBar = true {"hint":"Show the confidence bar. Signer feedback — belongs on the INWARD panel."}'
+    - '// @input bool showStatusLine = true {"hint":"Show the status line carrying the wrong-letter flash. Signer feedback — belongs on the INWARD panel."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Layout"}'
+    - '// @input float panelWidth = 42 {"hint":"Panel width in centimetres at the 110 cm focal plane.", "widget":"slider", "min":20, "max":60, "step":1}'
+    - '// @input float rowGap = 1.6 {"hint":"Vertical gap between the word, the assembled text, the bar and the status line.", "widget":"slider", "min":0.5, "max":4, "step":0.1}'
+    - '// @input float padding = 2.2 {"hint":"Inner padding on all four sides.", "widget":"slider", "min":1, "max":5, "step":0.1}'
+    - '// @input float barHeight = 1.2 {"hint":"Height of the confidence bar.", "widget":"slider", "min":0.4, "max":2.5, "step":0.1}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Labels"}'
+    - '// @input string headerLabel = "SIGNING" {"hint":"Small caption above the target word. Empty string hides it."}'
+    - '// @input string emptyPlaceholder = "—" {"hint":"Shown in the assembled-text area before anything has been committed."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Letter colours"}'
+    - '// @input vec4 doneColor = {0.45,0.9,0.55,1} {"hint":"Characters already committed correctly.", "widget":"color"}'
+    - '// @input vec4 currentColor = {1,1,1,1} {"hint":"The character being signed right now.", "widget":"color"}'
+    - '// @input vec4 pendingColor = {1,1,1,0.5} {"hint":"Characters not yet reached.", "widget":"color"}'
+    - '// @input vec4 skippedColor = {0.95,0.8,0.4,1} {"hint":"Characters that were skipped rather than signed.", "widget":"color"}'
+    - '// @input vec4 wrongColor = {0.9,0.45,0.45,1} {"hint":"The current character while a wrong-letter flash is up, and the flash text itself.", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Text colours"}'
+    - '// @input vec4 assembledColor = {1,1,1,1} {"hint":"The assembled text the reader is here to read. Keep this the brightest thing on the panel.", "widget":"color"}'
+    - '// @input vec4 captionColor = {1,1,1,0.55} {"hint":"Header caption and the idle status line.", "widget":"color"}'
+    - '// @ui {"widget":"group_end"}'

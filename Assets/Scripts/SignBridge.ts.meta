@@ -1,0 +1,92 @@
+- !<AssetImportMetadata/2b2cf0c4-4e5a-43d6-9840-a17f34113599>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 5c365251-6ec1-437e-9a9b-5ad03a9171fa
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 5c365251-6ec1-437e-9a9b-5ad03a9171fa
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 851a4382-1711-4f67-9e55-02c9ca0178b8
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/851a4382-1711-4f67-9e55-02c9ca0178b8>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 67f31bdc-2fff-4713-b121-fd73a6d3261d
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    featureMode: false
+    inwardPanel: false
+    k: false
+    maxDistance: false
+    minMeanConfidence: false
+    mockHandInput: false
+    outwardPanel: false
+    rearmFrames: false
+    signingHand: false
+    templatesAsset: false
+    thumbWeight: false
+    verbose: false
+    windowFrames: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - templatesAsset: !<reference.Asset> 00000000-0000-0000-0000-000000000000
+      inwardPanel: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      outwardPanel: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
+      mockHandInput: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+      featureMode: full
+      k: !<float> 1.000000
+      thumbWeight: !<float> 1.000000
+      windowFrames: !<float> 18.000000
+      minMeanConfidence: 0.300000
+      maxDistance: !<float> 0.000000
+      rearmFrames: !<float> 3.000000
+      signingHand: right
+      verbose: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<b>Sign Bridge</b> — hand → classifier → hold → phrase → panels"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Wiring"}'
+    - '// @input Asset.Asset templatesAsset {"hint":"templates.json, recorded by TemplateRecorder. Without it nothing can be classified."}'
+    - '// @input AssignableType_1 inwardPanel {"hint":"Signer-facing panel: target word, confidence bar, wrong-letter flash."}'
+    - '// @input AssignableType_2 outwardPanel {"hint":"Reader-facing panel: the assembled text."}'
+    - '// @input AssignableType_3 mockHandInput {"hint":"Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Classifier"}'
+    - "// @input string featureMode = \"full\" {\"hint\":\"Feature space distances are computed in. 'full' = 78 dims, 'reduced' = 57.\", \"widget\":\"combobox\", \"values\":[{\"label\":\"full\", \"value\":\"full\"}, {\"label\":\"reduced\", \"value\":\"reduced\"}]}"
+    - "// @input float k = 1 {\"hint\":\"How many of a letter's nearest templates to average into its score.\", \"widget\":\"slider\", \"min\":1, \"max\":5, \"step\":1}"
+    - '// @input float thumbWeight = 1 {"hint":"Weight on the thumb landmarks — the M/N/S/T separator. 1 = uniform. Remember weights hit SQUARED distance, so 2 is 4x the influence.", "widget":"slider", "min":1, "max":4, "step":0.25}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Hold buffer"}'
+    - '// @input float windowFrames = 18 {"hint":"Window length in frames. 18 is about 0.6s at 30fps.", "widget":"slider", "min":6, "max":40, "step":1}'
+    - '// @input float minMeanConfidence = 0.3 {"hint":"Mean confidence the winning letter must reach. PROVISIONAL until set from real data.", "widget":"slider", "min":0, "max":1, "step":0.05}'
+    - '// @input float maxDistance {"hint":"Max template distance for a frame to count as a letter. 0 DISABLES the gate — calibrate from the _NEGATIVE separation.", "widget":"slider", "min":0, "max":10, "step":0.1}'
+    - '// @input float rearmFrames = 3 {"hint":"Consecutive non-matching frames needed to re-arm after a commit. Separates a deliberate bounce from a one-frame glitch.", "widget":"slider", "min":1, "max":10, "step":1}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Session"}'
+    - '// @input string signingHand = "right" {"hint":"The hand that signs. Ignored while a MockHandInput is the active source.", "widget":"combobox", "values":[{"label":"right", "value":"right"}, {"label":"left", "value":"left"}]}'
+    - '// @input bool verbose = true {"hint":"Log a line on every commit, wrong letter and phrase completion."}'
+    - '// @ui {"widget":"group_end"}'
