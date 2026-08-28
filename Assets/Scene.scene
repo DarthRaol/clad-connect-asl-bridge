@@ -4,6 +4,12 @@
     - !<own> 00000000-0000-0065-0000-000000000064
     - !<own> 0005641c-028d-459a-0000-000000014b4d
     - !<own> f5d74682-203a-4970-81ea-9fa7b88c96bb
+    - !<own> 1781c4de-8b1e-4d6b-9a35-8d4d8f16ffbb
+    - !<own> b78be282-aaa9-4514-84cc-17fdcd77edc6
+    - !<own> 35128c07-1865-49aa-9505-ff73bbe83f2c
+    - !<own> 610ed123-11e1-41c7-b103-94a63586fe86
+    - !<own> db82cfbc-1b35-4bec-b349-c712b4799f2a
+    - !<own> 25c4aefd-b012-4130-b2bc-6e5e462ac362
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       - id: 1
@@ -496,6 +502,21 @@
     - !<own> a6af4948-9adc-4052-ae22-db902dd2764e
   Components:
     []
+- !<SceneObject/1781c4de-8b1e-4d6b-9a35-8d4d8f16ffbb>
+  PrefabRemaps:
+    []
+  Name: SignPanelOutward
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 8.000000, z: -110.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 7b0d95ea-c8f7-4755-928d-e955250f3fbe
 - !<SceneObject/181c239f-175e-4912-94fc-d37a2599b2d6>
   PrefabRemaps:
     []
@@ -591,6 +612,21 @@
     []
   Components:
     []
+- !<SceneObject/25c4aefd-b012-4130-b2bc-6e5e462ac362>
+  PrefabRemaps:
+    []
+  Name: LEAF Plugin Bridge
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 4c925872-95d4-45e3-b6c0-f5875196135f
 - !<SceneObject/264571d0-f879-411b-8deb-ff6d9921317f>
   PrefabRemaps:
     []
@@ -743,6 +779,21 @@
     - !<own> e42bbb9f-e951-4432-be2e-3cc712b1fc33
   Components:
     []
+- !<SceneObject/35128c07-1865-49aa-9505-ff73bbe83f2c>
+  PrefabRemaps:
+    []
+  Name: MockHandInput
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> f1530f52-dbeb-487f-acb8-8658eaeee416
 - !<RenderMeshVisual/35501b69-b651-41e6-9b64-72a252df8105>
   PrefabRemaps:
     []
@@ -929,6 +980,22 @@
     - !<own> 9c3a7929-faa9-4369-a85c-c75a6ab4eee7
   Components:
     []
+- !<ScriptComponent/4c925872-95d4-45e3-b6c0-f5875196135f>
+  PrefabRemaps:
+    []
+  Name: MessagingBridge
+  Enabled: true
+  ScriptAsset: !<reference> 9aa407db-2872-4afc-a162-cf7faf2a0f29
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/4cb212ad-5246-4215-adf1-aaf3ccfc0e9c>
   PrefabRemaps:
     []
@@ -1013,6 +1080,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/610ed123-11e1-41c7-b103-94a63586fe86>
+  PrefabRemaps:
+    []
+  Name: SignBridge
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 9dfaba9a-e6ae-4671-846c-39ffa529dd41
 - !<ScriptComponent/62967490-d66e-4479-8829-e5c9da5b5b57>
   PrefabRemaps:
     []
@@ -1199,6 +1281,55 @@
     - !<own> 0e778a10-bd57-4a2a-b20a-b6f4326e8058
   Components:
     []
+- !<ScriptComponent/6cc94236-1139-4e7a-89b0-4e7fabe00523>
+  PrefabRemaps:
+    []
+  Name: SignPanel
+  Enabled: true
+  ScriptAsset: !<reference> afac69d5-71cf-47b0-a968-745c8309a171
+  ScriptInputsDefault:
+    showHeader: true
+    showTargetWord: true
+    showConfidenceBar: true
+    showStatusLine: true
+    rowGap: true
+    padding: true
+    barHeight: true
+    headerLabel: true
+    emptyPlaceholder: true
+    doneColor: true
+    currentColor: true
+    pendingColor: true
+    skippedColor: true
+    wrongColor: true
+    assembledColor: true
+    captionColor: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      faceOutward: false
+      showHeader: true
+      showTargetWord: true
+      showAssembledText: false
+      showConfidenceBar: true
+      showStatusLine: true
+      panelWidth: !<float> 40.000000
+      rowGap: 1.600000
+      padding: 2.200000
+      barHeight: 1.200000
+      headerLabel: SIGNING
+      emptyPlaceholder: —
+      doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
+      currentColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      pendingColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.500000}
+      skippedColor: !<Vec4> {x: 0.950000, y: 0.800000, z: 0.400000, w: 1.000000}
+      wrongColor: !<Vec4> {x: 0.900000, y: 0.450000, z: 0.450000, w: 1.000000}
+      assembledColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      captionColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.550000}
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/6dbaab8f-d98a-4f36-b836-1d7c8a0cca87>
   PrefabRemaps:
     []
@@ -1319,6 +1450,53 @@
     - !<own> 52ecefe4-5642-445a-ad16-52ce818076bc
   Components:
     []
+- !<ScriptComponent/7b0d95ea-c8f7-4755-928d-e955250f3fbe>
+  PrefabRemaps:
+    []
+  Name: SignPanel
+  Enabled: true
+  ScriptAsset: !<reference> afac69d5-71cf-47b0-a968-745c8309a171
+  ScriptInputsDefault:
+    faceOutward: true
+    showAssembledText: true
+    rowGap: true
+    padding: true
+    barHeight: true
+    headerLabel: true
+    emptyPlaceholder: true
+    doneColor: true
+    currentColor: true
+    pendingColor: true
+    skippedColor: true
+    wrongColor: true
+    assembledColor: true
+    captionColor: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      faceOutward: true
+      showHeader: false
+      showTargetWord: false
+      showAssembledText: true
+      showConfidenceBar: false
+      showStatusLine: false
+      panelWidth: !<float> 48.000000
+      rowGap: 1.600000
+      padding: 2.200000
+      barHeight: 1.200000
+      headerLabel: SIGNING
+      emptyPlaceholder: —
+      doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
+      currentColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      pendingColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.500000}
+      skippedColor: !<Vec4> {x: 0.950000, y: 0.800000, z: 0.400000, w: 1.000000}
+      wrongColor: !<Vec4> {x: 0.900000, y: 0.450000, z: 0.450000, w: 1.000000}
+      assembledColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      captionColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.550000}
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/7b49000e-c7d9-48c6-8abb-b6c8abcd4655>
   PrefabRemaps:
     []
@@ -1606,6 +1784,42 @@
   ScriptTypes:
     "":
       {}
+- !<ScriptComponent/9dfaba9a-e6ae-4671-846c-39ffa529dd41>
+  PrefabRemaps:
+    []
+  Name: SignBridge
+  Enabled: true
+  ScriptAsset: !<reference> 5c365251-6ec1-437e-9a9b-5ad03a9171fa
+  ScriptInputsDefault:
+    featureMode: true
+    k: true
+    thumbWeight: true
+    windowFrames: true
+    minMeanConfidence: true
+    maxDistance: true
+    rearmFrames: true
+    signingHand: true
+    verbose: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      templatesAsset: !<reference.Asset> 58a81c8b-899d-4e3d-bee8-03aedc55e44c
+      inwardPanel: !<MappingBased.AssignableType_1> 6cc94236-1139-4e7a-89b0-4e7fabe00523
+      outwardPanel: !<MappingBased.AssignableType_2> 7b0d95ea-c8f7-4755-928d-e955250f3fbe
+      mockHandInput: !<MappingBased.AssignableType_3> f1530f52-dbeb-487f-acb8-8658eaeee416
+      featureMode: full
+      k: !<float> 1.000000
+      thumbWeight: !<float> 1.000000
+      windowFrames: !<float> 18.000000
+      minMeanConfidence: 0.300000
+      maxDistance: !<float> 0.000000
+      rearmFrames: !<float> 3.000000
+      signingHand: right
+      verbose: true
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/9e373d68-993f-4c8f-83a0-6644f1d9fefd>
   PrefabRemaps:
     []
@@ -1850,6 +2064,21 @@
     []
   Components:
     []
+- !<SceneObject/b78be282-aaa9-4514-84cc-17fdcd77edc6>
+  PrefabRemaps:
+    []
+  Name: SignPanelInward
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: -16.000000, z: -110.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 6cc94236-1139-4e7a-89b0-4e7fabe00523
 - !<SceneObject/b859e31c-4c76-46bd-bd6a-042228e52728>
   PrefabRemaps:
     []
@@ -2208,6 +2437,21 @@
     - !<own> f74a6bbb-4fba-4d8b-9b4e-64dd1c3e9ac3
   Components:
     []
+- !<SceneObject/db82cfbc-1b35-4bec-b349-c712b4799f2a>
+  PrefabRemaps:
+    []
+  Name: LeafIndex
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> ffea511b-4b77-4c4e-a167-111202c2218e
 - !<SceneObject/dcc36a33-e23d-48f3-8e96-f9c9fd3cd030>
   PrefabRemaps:
     []
@@ -2366,6 +2610,34 @@
     []
   Components:
     []
+- !<ScriptComponent/f1530f52-dbeb-487f-acb8-8658eaeee416>
+  PrefabRemaps:
+    []
+  Name: MockHandInput
+  Enabled: true
+  ScriptAsset: !<reference> 9cd35e7c-5e67-4bc7-8a86-0d83aa0768d0
+  ScriptInputsDefault:
+    makeActive: true
+    autoAdvance: true
+    loopSequence: true
+    jitterSigma: true
+    randomSeed: true
+    preserveStructuralDims: true
+    statusText: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      makeActive: true
+      autoAdvance: true
+      loopSequence: true
+      jitterSigma: !<float> 0.000000
+      randomSeed: !<float> 1.000000
+      preserveStructuralDims: true
+      statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/f36287fd-ed56-442d-ba20-78f9ef6f3502>
   PrefabRemaps:
     []
@@ -2603,3 +2875,19 @@
     - !<own> bb75b5ea-8baf-4d8d-bcf8-49bd79873881
   Components:
     []
+- !<ScriptComponent/ffea511b-4b77-4c4e-a167-111202c2218e>
+  PrefabRemaps:
+    []
+  Name: LeafIndex
+  Enabled: true
+  ScriptAsset: !<reference> 0a8f10c2-20e6-4fc7-bf13-6a06d630c91d
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}

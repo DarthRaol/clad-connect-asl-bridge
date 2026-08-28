@@ -1,9 +1,12 @@
 # ASL Bridge — Task Checklist
 
-**Deadline: Sun Aug 30, 11:59 PM PT.** Today: Wed Aug 26. Kill date on recognition: **Fri Aug 28.**
+**Deadline: Sun Aug 30, 11:59 PM PT** = **Mon Aug 31, ~12:30 PM IST** (local).
+Now: **Sat Aug 29.** The Fri Aug 28 kill date on recognition has **passed** with Phase 0 at 0/5,
+so the decision is made: **ship with synthetic templates, honestly labelled.**
 
-Status as of last verification: **Phases 1–2 complete, Phase 3 not started.**
-Roughly 9 of 33 tasks done — but Phase 3 is the bulk of the remaining code and is fully unblocked.
+Status: **Phases 1, 2, 3 complete.** Working end-to-end pipeline, 5 mutation-verified LEAF
+scenarios passing, two panels. **Phase 4 is effectively dead. All remaining effort goes to
+Phase 5 — shipping.**
 
 Legend: `[x]` done · `[ ]` todo · `[!]` blocked · **You** / **Friend** / **CLAD** = who does it
 

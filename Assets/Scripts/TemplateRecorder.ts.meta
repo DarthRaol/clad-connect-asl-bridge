@@ -31,6 +31,7 @@
     captureDelaySeconds: false
     confirmAudio: false
     letters: false
+    negativeSampleCount: false
     reformThreshold: false
     requireReformBetweenSamples: false
     resumePreviousSession: false
@@ -49,6 +50,7 @@
   DefaultScriptInputs:
     - letters: ABCDEFGHIKLMNOPQRSTUVWXY
       samplesPerLetter: !<float> 5.000000
+      negativeSampleCount: !<float> 30.000000
       statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       signingHand: right
       triggerHand: left
@@ -63,6 +65,7 @@
   InputLines:
     - '// @input string letters = "ABCDEFGHIKLMNOPQRSTUVWXY" {"hint":"Letters to record, in order. J and Z are omitted by default: they are motion letters, not static handshapes."}'
     - '// @input float samplesPerLetter = 5 {"hint":"How many samples to capture per letter. 5-10 is a reasonable range."}'
+    - '// @input float negativeSampleCount = 30 {"hint":"Non-letter poses to capture after the letters, under the reserved _NEGATIVE key. They are NOT templates — they calibrate the rejection distance. 0 skips the phase; ~30 is a good target."}'
     - '// @input Component.Text statusText {"hint":"Large text the operator reads. Shows the target letter, the counter, and the RECORDED confirmation."}'
     - '// @input string signingHand = "right" {"hint":"The hand that FORMS the letter. Its landmarks are what get recorded.", "widget":"combobox", "values":[{"label":"right", "value":"right"}, {"label":"left", "value":"left"}]}'
     - '// @input string triggerHand = "left" {"hint":"The hand that PINCHES to trigger a capture. Keep it different from signingHand — see the header comment.", "widget":"combobox", "values":[{"label":"left", "value":"left"}, {"label":"right", "value":"right"}]}'
