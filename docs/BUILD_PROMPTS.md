@@ -24,7 +24,7 @@ Excluded: **J and Z** (both require motion).
 | File | Role | Preview-testable |
 |---|---|---|
 | `HandProbe.ts` | Confirms joint availability; on-device sanity check | n/a |
-| `LandmarkCapture.ts` | 21 joints → normalized 63-dim vector | Yes (via mock) |
+| `LandmarkCapture.ts` | 26 joints → normalized 78-dim vector | Yes (via mock) |
 | `TemplateRecorder.ts` | Capture samples per letter → JSON | **No — hardware** |
 | `Assets/Data/templates.json` | The dataset | — |
 | `Classifier.ts` | k-NN + confidence, swappable interface | Yes |
@@ -39,18 +39,27 @@ Excluded: **J and Z** (both require motion).
 Raw joint positions are useless directly — they move with hand position, distance, and rotation.
 Normalize into a hand-local frame:
 
-1. **Origin** = `wrist.position`. The skill notes wrist is the stable joint; fingertips are jittery.
-2. **Basis** — build an orthonormal frame from wrist→middle-knuckle (primary axis) and the
+1. **Origin** = `wrist.position`. The stable joint; tips are the jittery end.
+2. **Basis** — build an orthonormal frame from wrist→`middleKnuckle` (primary axis) and the
    knuckle spread (secondary axis). Cross product gives the third.
-3. **Rotate** all 21 joints into that frame → rotation invariant.
-4. **Scale** by the wrist→middle-knuckle distance → hand-size and camera-distance invariant.
+3. **Rotate** all 26 joints into that frame → rotation invariant.
+4. **Scale** by the wrist→`middleKnuckle` distance → hand-size and camera-distance invariant.
 
-Output: 21 × 3 = **63-dim vector**. This is the same normalization idea MediaPipe uses; the method
-transfers even though their data does not.
+Output: 26 × 3 = **78-dim vector**. Iterate `hand.points` (length 26, wrist first, then thumb →
+index → middle → ring → pinky, each wrist-ward to tip-ward).
+
+**SIK is not MediaPipe.** The familiar "21 keypoints" is the MediaPipe model. SIK adds a
+`<finger>ToWrist` metacarpal split per finger: `wrist + 5 × 5 = 26`. See `docs/JOINTS.md`.
+
+**Thumb naming trap** — `thumbKnuckle` is `THUMB_1`, but `indexKnuckle` is `INDEX_0`. The same word
+maps to a different landmark index. The thumb runs
+`thumbToWrist / thumbBaseJoint / thumbKnuckle / thumbMidJoint / thumbTip`; there is no
+`thumbUpperJoint`. This matters because M/N/S/T are distinguished by `thumbTip` position relative to
+the finger knuckles — the off-by-one lives in exactly the code that decides your hardest letters.
 
 ### Classification
 
-k-NN over stored templates. Distance = Euclidean over the 63-dim vector.
+k-NN over stored templates. Distance = Euclidean over the 78-dim vector.
 
 - **Confidence** = margin-based: `1 - (d_best / d_runnerup)`. A letter that's clearly nearest scores
   high; a letter tied with its neighbour scores low. This is better than raw distance because it
@@ -128,10 +137,12 @@ code. Confirm what belongs in onAwake vs OnStartEvent.
 
 **6.**
 ```
-Write Assets/Scripts/LandmarkCapture.ts. It reads all 21 joints from TrackedHand and returns a
-normalized 63-dim vector: origin at wrist, orthonormal basis from wrist->middle-knuckle and the
-knuckle spread, scaled by wrist->middle-knuckle distance. Rotation and scale invariant. Use the
-joint names from docs/JOINTS.md.
+Write Assets/Scripts/LandmarkCapture.ts. It takes a plain array of 26 keypoint positions --
+NOT a TrackedHand -- and returns a normalized 78-dim vector: origin at wrist, orthonormal
+basis from wrist->middleKnuckle and the knuckle spread, scaled by wrist->middleKnuckle
+distance. Rotation and scale invariant. Use the joint names and ordering from docs/JOINTS.md,
+including the thumb naming trap. Add a thin adapter that extracts hand.points from a
+TrackedHand, so the hardware path and the fixture path share one classifier.
 ```
 
 **7.**
@@ -146,7 +157,7 @@ sample counter and a clear "recorded" confirmation, since the person running thi
 **8.** *(the mocking layer — everything downstream depends on it)*
 ```
 Raw HandInputData doesn't fire in the Lens Studio Editor, so I need a mocking layer. Write
-Assets/Scripts/MockHandInput.ts that can inject synthetic 63-dim landmark vectors, so the
+Assets/Scripts/MockHandInput.ts that can inject synthetic 78-dim landmark vectors, so the
 classifier and state machine are testable in preview without hardware.
 ```
 
