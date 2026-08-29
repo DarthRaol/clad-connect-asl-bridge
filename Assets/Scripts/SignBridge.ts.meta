@@ -42,6 +42,8 @@
     outwardPanel: false
     phraseCompleteAudio: false
     rearmFrames: false
+    referenceHandVisualizer: false
+    showReferenceHand: false
     signingHand: false
     templatesAsset: false
     thumbWeight: false
@@ -61,6 +63,8 @@
       outwardPanel: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
       mockHandInput: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
       handVisualizer: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
+      referenceHandVisualizer: !<MappingBased.AssignableType_5> 00000000-0000-0000-0000-000000000000
+      showReferenceHand: true
       demoPoseAsset: !<reference.Asset> 00000000-0000-0000-0000-000000000000
       letterCommitAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
       phraseCompleteAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
@@ -87,6 +91,8 @@
     - '// @input AssignableType_2 outwardPanel {"hint":"Reader-facing panel: the assembled text."}'
     - '// @input AssignableType_3 mockHandInput {"hint":"Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware."}'
     - '// @input AssignableType_4 handVisualizer {"hint":"Optional. Draws the exact feature vector the classifier scores, as a hand between the panels."}'
+    - "// @input AssignableType_5 referenceHandVisualizer {\"hint\":\"Optional. A SECOND HandVisualizer showing the target letter's template pose — what the signer is copying. Style it dimmer and thinner than the live hand so the two are never confusable.\"}"
+    - '// @input bool showReferenceHand = true {"hint":"Show the reference (target) hand. Turn off for the K/P orientation shot, where a second hand would distract from the two live poses being identical."}'
     - '// @input Asset.Asset demoPoseAsset {"hint":"DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs."}'
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"group_start", "label":"Audio"}'

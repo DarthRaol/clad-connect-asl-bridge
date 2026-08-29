@@ -5310,10 +5310,7 @@
             },
             "demoPoseAsset": {
               "isScriptInput": true,
-              "value": {
-                "UUID": "e15a3e73-632d-42fe-b65e-6b3409c5a2f9",
-                "name": "poses.demo"
-              },
+              "value": null,
               "type": "Asset.Asset",
               "uiInfo": "{\"hint\":\"DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs.\"}"
             },
@@ -5418,6 +5415,22 @@
               "uiInfo": "{\"hint\":\"Consecutive non-matching frames needed to re-arm after a commit. Separates a deliberate bounce from a one-frame glitch.\", \"widget\":\"slider\", \"min\":1, \"max\":10, \"step\":1}",
               "defaultValue": "3"
             },
+            "referenceHandVisualizer": {
+              "isScriptInput": true,
+              "value": {
+                "UUID": "3bc89efa-6209-4fbc-afab-71fbe40dc144",
+                "name": "HandVisualizer"
+              },
+              "type": "AssignableType_5",
+              "uiInfo": "{\"hint\":\"Optional. A SECOND HandVisualizer showing the target letter's template pose — what the signer is copying. Style it dimmer and thinner than the live hand so the two are never confusable.\"}"
+            },
+            "showReferenceHand": {
+              "isScriptInput": true,
+              "value": true,
+              "type": "bool",
+              "uiInfo": "{\"hint\":\"Show the reference (target) hand. Turn off for the K/P orientation shot, where a second hand would distract from the two live poses being identical.\"}",
+              "defaultValue": "true"
+            },
             "signingHand": {
               "isScriptInput": true,
               "value": "right",
@@ -5463,11 +5476,13 @@
             "inputNames.11": "outwardPanel",
             "inputNames.12": "phraseCompleteAudio",
             "inputNames.13": "rearmFrames",
-            "inputNames.14": "signingHand",
-            "inputNames.15": "templatesAsset",
-            "inputNames.16": "thumbWeight",
-            "inputNames.17": "verbose",
-            "inputNames.18": "windowFrames",
+            "inputNames.14": "referenceHandVisualizer",
+            "inputNames.15": "showReferenceHand",
+            "inputNames.16": "signingHand",
+            "inputNames.17": "templatesAsset",
+            "inputNames.18": "thumbWeight",
+            "inputNames.19": "verbose",
+            "inputNames.20": "windowFrames",
             "name": "SignBridge",
             "enabled": true,
             "sceneObject": "@sceneObject:SignBridge",
@@ -5570,7 +5585,7 @@
       "parentId": null,
       "transform": {
         "position": [
-          0,
+          -9,
           -2.5,
           -110
         ],
@@ -5660,6 +5675,20 @@
               "uiInfo": "{\"hint\":\"Radius of a joint sphere, in centimetres.\", \"widget\":\"slider\", \"min\":0.05, \"max\":1.5, \"step\":0.05}",
               "defaultValue": "0.42"
             },
+            "matchFarColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.3, y: 0.42, z: 0.52, w: 0.55}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"REFERENCE INSTANCE ONLY. Colour when the live hand is far from this pose. Keep it dim and cool so the reference never competes with the live hand for attention.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.3,0.42,0.52,0.55}"
+            },
+            "matchNearColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.35, y: 0.95, z: 0.85, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"REFERENCE INSTANCE ONLY. Colour when the live hand is on this pose. The reference brightening is the 'you're getting closer' signal.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.35,0.95,0.85,1}"
+            },
             "neutralColor": {
               "isScriptInput": true,
               "value": "{x: 0.36, y: 0.58, z: 0.88, w: 1}",
@@ -5698,10 +5727,12 @@
             "inputNames.6": "hideWhenUntracked",
             "inputNames.7": "jointMaterial",
             "inputNames.8": "jointRadius",
-            "inputNames.9": "neutralColor",
-            "inputNames.10": "offset",
-            "inputNames.11": "rotationDegrees",
-            "inputNames.12": "warmColor",
+            "inputNames.9": "matchFarColor",
+            "inputNames.10": "matchNearColor",
+            "inputNames.11": "neutralColor",
+            "inputNames.12": "offset",
+            "inputNames.13": "rotationDegrees",
+            "inputNames.14": "warmColor",
             "name": "HandVisualizer",
             "enabled": true,
             "sceneObject": "@sceneObject:HandVisualizer",
@@ -5876,6 +5907,172 @@
             "isPrefabInstanceRoot": false,
             "hasPrefabChanges": false,
             "id": "591e9b96-99c0-4cf3-8358-037682dbd879",
+            "type": "ScriptComponent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cf8b8a8e-13e7-42c3-8bbd-703673e270cf",
+      "name": "ReferenceHand",
+      "enabled": true,
+      "parentId": null,
+      "transform": {
+        "position": [
+          9,
+          -2.5,
+          -110
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "layers": 1,
+      "components": [
+        {
+          "id": "3bc89efa-6209-4fbc-afab-71fbe40dc144",
+          "type": "ScriptComponent",
+          "name": "HandVisualizer",
+          "enabled": true,
+          "properties": {
+            "handScale": {
+              "isScriptInput": true,
+              "value": 5,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Centimetres per unit of normalized hand space. One unit is wrist->middleKnuckle, so the drawn hand is roughly 2x this tall.\", \"widget\":\"slider\", \"min\":1, \"max\":20, \"step\":0.5}",
+              "defaultValue": "5.5"
+            },
+            "boneDimming": {
+              "isScriptInput": true,
+              "value": 0.5,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Bone brightness relative to the joints. Below 1 makes the joints read as knuckles.\", \"widget\":\"slider\", \"min\":0.2, \"max\":1, \"step\":0.05}",
+              "defaultValue": "0.55"
+            },
+            "jointMaterial": {
+              "isScriptInput": true,
+              "value": {
+                "UUID": "16ef55cc-0b21-4b3c-94af-9e33958ac9d3",
+                "name": "RefHandJointMat"
+              },
+              "type": "Asset.Material",
+              "uiInfo": "{\"hint\":\"Unlit material for the joint spheres. Tinted at runtime by hold state — give it its own asset, not one shared with the panels.\"}"
+            },
+            "confirmColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.24, y: 0.94, z: 0.46, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Committed: pulsed on the frame a letter commits.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.24,0.94,0.46,1}"
+            },
+            "boneMaterial": {
+              "isScriptInput": true,
+              "value": {
+                "UUID": "6a2dea5d-979d-4f56-b4bd-fae35d19ff0b",
+                "name": "RefHandBoneMat"
+              },
+              "type": "Asset.Material",
+              "uiInfo": "{\"hint\":\"Unlit material for the bones. A second asset, so bones can sit dimmer than joints.\"}"
+            },
+            "boneThickness": {
+              "isScriptInput": true,
+              "value": 0.11999999731779099,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Thickness of a bone, in centimetres.\", \"widget\":\"slider\", \"min\":0.05, \"max\":1.5, \"step\":0.05}",
+              "defaultValue": "0.26"
+            },
+            "hideWhenUntracked": {
+              "isScriptInput": true,
+              "value": true,
+              "type": "bool",
+              "uiInfo": "{\"hint\":\"Hide the rig on untracked frames. On means the gaps in the input are visible as gaps — recommended, since the point is to show the real input.\"}",
+              "defaultValue": "true"
+            },
+            "confirmSeconds": {
+              "isScriptInput": true,
+              "value": 0.44999998807907104,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"How long the commit pulse holds before falling back to neutral.\", \"widget\":\"slider\", \"min\":0.05, \"max\":2, \"step\":0.05}",
+              "defaultValue": "0.45"
+            },
+            "jointRadius": {
+              "isScriptInput": true,
+              "value": 0.23999999463558197,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Radius of a joint sphere, in centimetres.\", \"widget\":\"slider\", \"min\":0.05, \"max\":1.5, \"step\":0.05}",
+              "defaultValue": "0.42"
+            },
+            "matchFarColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.3, y: 0.42, z: 0.52, w: 0.55}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"REFERENCE INSTANCE ONLY. Colour when the live hand is far from this pose. Keep it dim and cool so the reference never competes with the live hand for attention.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.3,0.42,0.52,0.55}"
+            },
+            "matchNearColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.35, y: 0.95, z: 0.85, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"REFERENCE INSTANCE ONLY. Colour when the live hand is on this pose. The reference brightening is the 'you're getting closer' signal.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.35,0.95,0.85,1}"
+            },
+            "neutralColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.36, y: 0.58, z: 0.88, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Searching: a hand is tracked but nothing is accumulating.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.36,0.58,0.88,1}"
+            },
+            "offset": {
+              "isScriptInput": true,
+              "value": "{x: 0, y: 0, z: 2}",
+              "type": "vec3",
+              "uiInfo": "{\"hint\":\"Offset of the rig from this object, in centimetres. The default seats it in the gap between the two panels.\"}",
+              "defaultValue": "{0,0,2}"
+            },
+            "rotationDegrees": {
+              "isScriptInput": true,
+              "value": "{x: 0, y: 180, z: 0}",
+              "type": "vec3",
+              "uiInfo": "{\"hint\":\"Rig rotation in degrees. The normalized frame has +Z as the palm normal; the default turns the palm toward the wearer.\"}",
+              "defaultValue": "{0,180,0}"
+            },
+            "warmColor": {
+              "isScriptInput": true,
+              "value": "{x: 1, y: 0.72, z: 0.18, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fully warmed: HoldBuffer progress at 1, a commit about to fire.\", \"widget\":\"color\"}",
+              "defaultValue": "{1,0.72,0.18,1}"
+            },
+            "scriptAsset": "@asset:Scripts/HandVisualizer.ts",
+            "inputNames.0": "boneDimming",
+            "inputNames.1": "boneMaterial",
+            "inputNames.2": "boneThickness",
+            "inputNames.3": "confirmColor",
+            "inputNames.4": "confirmSeconds",
+            "inputNames.5": "handScale",
+            "inputNames.6": "hideWhenUntracked",
+            "inputNames.7": "jointMaterial",
+            "inputNames.8": "jointRadius",
+            "inputNames.9": "matchFarColor",
+            "inputNames.10": "matchNearColor",
+            "inputNames.11": "neutralColor",
+            "inputNames.12": "offset",
+            "inputNames.13": "rotationDegrees",
+            "inputNames.14": "warmColor",
+            "name": "HandVisualizer",
+            "enabled": true,
+            "sceneObject": "@sceneObject:ReferenceHand",
+            "isPrefabInstanceRoot": false,
+            "hasPrefabChanges": false,
+            "id": "3bc89efa-6209-4fbc-afab-71fbe40dc144",
             "type": "ScriptComponent"
           }
         }
@@ -14655,6 +14852,432 @@
         "name": "HandJointMat",
         "fileMeta.id": "732ce397-fb7c-4ebc-a907-213e76636c47",
         "id": "3e573a8d-630d-4f9f-8631-1e17dd8c65d4",
+        "type": "Material"
+      }
+    },
+    {
+      "id": "16ef55cc-0b21-4b3c-94af-9e33958ac9d3",
+      "name": "RefHandJointMat",
+      "type": "Material",
+      "path": "Render/RefHandJointMat.mat",
+      "properties": {
+        "passInfos.0.baseColor.value": {
+          "x": 0.30000001192092896,
+          "y": 0.41999998688697815,
+          "z": 0.5199999809265137,
+          "w": 0.550000011920929
+        },
+        "passInfos.0.baseColor.label": "Base Color",
+        "passInfos.0.ENABLE_BASE_TEX": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Base Texture"
+        },
+        "passInfos.0.baseTex.value": null,
+        "passInfos.0.baseTex.hidden": true,
+        "passInfos.0.baseTex.enabledBy": "ENABLE_BASE_TEX",
+        "passInfos.0.baseTex.label": "Texture",
+        "passInfos.0.Texture UV": {
+          "value": "Mesh UV 0",
+          "isDefine": true,
+          "type": "defineSelect",
+          "options": [
+            "Mesh UV 0",
+            "Mesh UV 1",
+            "Transformed UV 2",
+            "Transformed UV 3"
+          ],
+          "label": "Texture UV"
+        },
+        "passInfos.0.ENABLE_OPACITY_TEX": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Opacity Texture"
+        },
+        "passInfos.0.opacityTex.value": null,
+        "passInfos.0.opacityTex.hidden": true,
+        "passInfos.0.opacityTex.enabledBy": "ENABLE_OPACITY_TEX",
+        "passInfos.0.opacityTex.label": "Texture",
+        "passInfos.0.Tweak_N67": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Transformed UV 2"
+        },
+        "passInfos.0.Source": {
+          "value": "Mesh UV 0",
+          "isDefine": true,
+          "type": "defineSelect",
+          "options": [
+            "Mesh UV 0",
+            "Mesh UV 1",
+            "Screen UV",
+            "Transformed UV 2"
+          ],
+          "label": "Source"
+        },
+        "passInfos.0.uv2Scale.value": null,
+        "passInfos.0.uv2Scale.hidden": true,
+        "passInfos.0.uv2Scale.enabledBy": "Tweak_N67",
+        "passInfos.0.uv2Scale.label": "Scale",
+        "passInfos.0.uv2Offset.value": null,
+        "passInfos.0.uv2Offset.hidden": true,
+        "passInfos.0.uv2Offset.enabledBy": "Tweak_N67",
+        "passInfos.0.uv2Offset.label": "Offset",
+        "passInfos.0.uv2EnableAnimation": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Animation"
+        },
+        "passInfos.0.Tweak_N11": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Transformed UV 3"
+        },
+        "passInfos.0.uv3Scale.value": null,
+        "passInfos.0.uv3Scale.hidden": true,
+        "passInfos.0.uv3Scale.enabledBy": "Tweak_N11",
+        "passInfos.0.uv3Scale.label": "Scale",
+        "passInfos.0.uv3Offset.value": null,
+        "passInfos.0.uv3Offset.hidden": true,
+        "passInfos.0.uv3Offset.enabledBy": "Tweak_N11",
+        "passInfos.0.uv3Offset.label": "Offset",
+        "passInfos.0.uv3EnableAnimation": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Animation"
+        },
+        "passInfos.0.alphaTestThreshold.value": null,
+        "passInfos.0.alphaTestThreshold.hidden": true,
+        "passInfos.0.alphaTestThreshold.enabledBy": "uv3EnableAnimation",
+        "passInfos.0.alphaTestThreshold.label": "Alpha Test Threshold",
+        "passInfos.0.alphaTestThreshold.min": 0,
+        "passInfos.0.alphaTestThreshold.max": 1,
+        "passInfos.0.Port_Default_N204": 1,
+        "passInfos.0.Port_Default_N369": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "passInfos.0.PreviewEnabled": 0,
+        "passInfos.0.depthWrite": true,
+        "passInfos.0.depthTest": true,
+        "passInfos.0.depthFunction": {
+          "value": "LessEqual",
+          "type": "enum",
+          "enumType": "Editor.Assets.DepthFunction",
+          "options": [
+            "Never",
+            "Less",
+            "Equal",
+            "LessEqual",
+            "Greater",
+            "NotEqual",
+            "GreaterEqual",
+            "Always"
+          ]
+        },
+        "passInfos.0.twoSided": false,
+        "passInfos.0.cullMode": {
+          "value": "Back",
+          "type": "enum",
+          "enumType": "Editor.Assets.CullMode",
+          "options": [
+            "Front",
+            "Back",
+            "FrontAndBack"
+          ]
+        },
+        "passInfos.0.blendMode": {
+          "value": "Disabled",
+          "type": "enum",
+          "enumType": "Editor.Assets.BlendMode",
+          "options": [
+            "Disabled",
+            "Normal",
+            "Multiply",
+            "MultiplyLegacy",
+            "Add",
+            "AddLegacy",
+            "PremultipliedAlpha",
+            "Glass",
+            "ColoredGlass",
+            "AlphaTest",
+            "AlphaToCoverage",
+            "Screen",
+            "Min",
+            "Max",
+            "PremultipliedAlphaAuto",
+            "Custom",
+            "Darken",
+            "ColorBurn",
+            "Lighten",
+            "ColorDodge",
+            "Overlay",
+            "SoftLight",
+            "HardLight",
+            "VividLight",
+            "LinearLight",
+            "PinLight",
+            "HardMix",
+            "Diff",
+            "Exclusion",
+            "Subtract",
+            "Hue",
+            "Saturation",
+            "Color",
+            "Luminosity",
+            "Average",
+            "Negation",
+            "HardReflect",
+            "HardGlow",
+            "HardPhoenix",
+            "Realistic",
+            "Division",
+            "Bright",
+            "Forgray",
+            "NotBright",
+            "Intense"
+          ]
+        },
+        "passInfos.0.polygonOffset": {
+          "x": 0,
+          "y": 0
+        },
+        "passInfos.0.frustumCulling": {
+          "value": "Auto",
+          "type": "enum",
+          "enumType": "Editor.Assets.FrustumCullMode",
+          "options": [
+            "Auto",
+            "Extend"
+          ]
+        },
+        "passInfos.0.instanceCount": 1,
+        "passInfos.0.id": "6332454b-b57f-4775-a50d-c1371735325a",
+        "passInfos.0.type": "PassInfo",
+        "name": "RefHandJointMat",
+        "fileMeta.id": "69a408a7-c7b0-4b2b-a1ee-da45c79d8a14",
+        "id": "16ef55cc-0b21-4b3c-94af-9e33958ac9d3",
+        "type": "Material"
+      }
+    },
+    {
+      "id": "6a2dea5d-979d-4f56-b4bd-fae35d19ff0b",
+      "name": "RefHandBoneMat",
+      "type": "Material",
+      "path": "Render/RefHandBoneMat.mat",
+      "properties": {
+        "passInfos.0.baseColor.value": {
+          "x": 0.17000000178813934,
+          "y": 0.23000000417232513,
+          "z": 0.28999999165534973,
+          "w": 0.550000011920929
+        },
+        "passInfos.0.baseColor.label": "Base Color",
+        "passInfos.0.ENABLE_BASE_TEX": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Base Texture"
+        },
+        "passInfos.0.baseTex.value": null,
+        "passInfos.0.baseTex.hidden": true,
+        "passInfos.0.baseTex.enabledBy": "ENABLE_BASE_TEX",
+        "passInfos.0.baseTex.label": "Texture",
+        "passInfos.0.Texture UV": {
+          "value": "Mesh UV 0",
+          "isDefine": true,
+          "type": "defineSelect",
+          "options": [
+            "Mesh UV 0",
+            "Mesh UV 1",
+            "Transformed UV 2",
+            "Transformed UV 3"
+          ],
+          "label": "Texture UV"
+        },
+        "passInfos.0.ENABLE_OPACITY_TEX": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Opacity Texture"
+        },
+        "passInfos.0.opacityTex.value": null,
+        "passInfos.0.opacityTex.hidden": true,
+        "passInfos.0.opacityTex.enabledBy": "ENABLE_OPACITY_TEX",
+        "passInfos.0.opacityTex.label": "Texture",
+        "passInfos.0.Tweak_N67": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Transformed UV 2"
+        },
+        "passInfos.0.Source": {
+          "value": "Mesh UV 0",
+          "isDefine": true,
+          "type": "defineSelect",
+          "options": [
+            "Mesh UV 0",
+            "Mesh UV 1",
+            "Screen UV",
+            "Transformed UV 2"
+          ],
+          "label": "Source"
+        },
+        "passInfos.0.uv2Scale.value": null,
+        "passInfos.0.uv2Scale.hidden": true,
+        "passInfos.0.uv2Scale.enabledBy": "Tweak_N67",
+        "passInfos.0.uv2Scale.label": "Scale",
+        "passInfos.0.uv2Offset.value": null,
+        "passInfos.0.uv2Offset.hidden": true,
+        "passInfos.0.uv2Offset.enabledBy": "Tweak_N67",
+        "passInfos.0.uv2Offset.label": "Offset",
+        "passInfos.0.uv2EnableAnimation": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Animation"
+        },
+        "passInfos.0.Tweak_N11": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Transformed UV 3"
+        },
+        "passInfos.0.uv3Scale.value": null,
+        "passInfos.0.uv3Scale.hidden": true,
+        "passInfos.0.uv3Scale.enabledBy": "Tweak_N11",
+        "passInfos.0.uv3Scale.label": "Scale",
+        "passInfos.0.uv3Offset.value": null,
+        "passInfos.0.uv3Offset.hidden": true,
+        "passInfos.0.uv3Offset.enabledBy": "Tweak_N11",
+        "passInfos.0.uv3Offset.label": "Offset",
+        "passInfos.0.uv3EnableAnimation": {
+          "value": false,
+          "isDefine": true,
+          "type": "define",
+          "label": "Animation"
+        },
+        "passInfos.0.alphaTestThreshold.value": null,
+        "passInfos.0.alphaTestThreshold.hidden": true,
+        "passInfos.0.alphaTestThreshold.enabledBy": "uv3EnableAnimation",
+        "passInfos.0.alphaTestThreshold.label": "Alpha Test Threshold",
+        "passInfos.0.alphaTestThreshold.min": 0,
+        "passInfos.0.alphaTestThreshold.max": 1,
+        "passInfos.0.Port_Default_N204": 1,
+        "passInfos.0.Port_Default_N369": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "w": 1
+        },
+        "passInfos.0.PreviewEnabled": 0,
+        "passInfos.0.depthWrite": true,
+        "passInfos.0.depthTest": true,
+        "passInfos.0.depthFunction": {
+          "value": "LessEqual",
+          "type": "enum",
+          "enumType": "Editor.Assets.DepthFunction",
+          "options": [
+            "Never",
+            "Less",
+            "Equal",
+            "LessEqual",
+            "Greater",
+            "NotEqual",
+            "GreaterEqual",
+            "Always"
+          ]
+        },
+        "passInfos.0.twoSided": false,
+        "passInfos.0.cullMode": {
+          "value": "Back",
+          "type": "enum",
+          "enumType": "Editor.Assets.CullMode",
+          "options": [
+            "Front",
+            "Back",
+            "FrontAndBack"
+          ]
+        },
+        "passInfos.0.blendMode": {
+          "value": "Disabled",
+          "type": "enum",
+          "enumType": "Editor.Assets.BlendMode",
+          "options": [
+            "Disabled",
+            "Normal",
+            "Multiply",
+            "MultiplyLegacy",
+            "Add",
+            "AddLegacy",
+            "PremultipliedAlpha",
+            "Glass",
+            "ColoredGlass",
+            "AlphaTest",
+            "AlphaToCoverage",
+            "Screen",
+            "Min",
+            "Max",
+            "PremultipliedAlphaAuto",
+            "Custom",
+            "Darken",
+            "ColorBurn",
+            "Lighten",
+            "ColorDodge",
+            "Overlay",
+            "SoftLight",
+            "HardLight",
+            "VividLight",
+            "LinearLight",
+            "PinLight",
+            "HardMix",
+            "Diff",
+            "Exclusion",
+            "Subtract",
+            "Hue",
+            "Saturation",
+            "Color",
+            "Luminosity",
+            "Average",
+            "Negation",
+            "HardReflect",
+            "HardGlow",
+            "HardPhoenix",
+            "Realistic",
+            "Division",
+            "Bright",
+            "Forgray",
+            "NotBright",
+            "Intense"
+          ]
+        },
+        "passInfos.0.polygonOffset": {
+          "x": 0,
+          "y": 0
+        },
+        "passInfos.0.frustumCulling": {
+          "value": "Auto",
+          "type": "enum",
+          "enumType": "Editor.Assets.FrustumCullMode",
+          "options": [
+            "Auto",
+            "Extend"
+          ]
+        },
+        "passInfos.0.instanceCount": 1,
+        "passInfos.0.id": "bbc0b558-ec7b-41ac-9360-3b6c87edaccb",
+        "passInfos.0.type": "PassInfo",
+        "name": "RefHandBoneMat",
+        "fileMeta.id": "e1ac1b62-d05d-4be0-b580-fd56271d5997",
+        "id": "6a2dea5d-979d-4f56-b4bd-fae35d19ff0b",
         "type": "Material"
       }
     }

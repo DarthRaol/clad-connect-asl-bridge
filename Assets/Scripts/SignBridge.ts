@@ -78,6 +78,15 @@ export class SignBridge extends BaseScriptComponent {
 
   @input
   @allowUndefined
+  @hint("Optional. A SECOND HandVisualizer showing the target letter's template pose — what the signer is copying. Style it dimmer and thinner than the live hand so the two are never confusable.")
+  referenceHandVisualizer: HandVisualizer
+
+  @input
+  @hint("Show the reference (target) hand. Turn off for the K/P orientation shot, where a second hand would distract from the two live poses being identical.")
+  showReferenceHand: boolean = true
+
+  @input
+  @allowUndefined
   @hint("DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs.")
   demoPoseAsset: Asset
   @ui.group_end
@@ -164,6 +173,13 @@ export class SignBridge extends BaseScriptComponent {
 
   private ready = false
 
+  // Reference-hand state. The pose and its distance scale are recomputed only
+  // when the target letter changes — nearestOtherDistance() walks every
+  // template pair and has no business running per frame.
+  private referenceLetter: string | null = null
+  private referencePose: number[] | null = null
+  private referenceScale = 1
+
   onAwake() {
     // getHand belongs in onAwake. Nothing here subscribes to a SIK event, so
     // there is no .add() that needs deferring to OnStartEvent.
@@ -249,6 +265,87 @@ export class SignBridge extends BaseScriptComponent {
       }
     }
     this.phrases.setAutoAdvanceSeconds(advance)
+  }
+
+  /**
+   * Draw the target letter's template pose, tinted by how close the live hand
+   * is to it.
+   *
+   * The pose comes from `templates[letter][0]` — the same array the classifier
+   * scores against — so the reference hand is literally the thing being
+   * matched, not an illustration of it.
+   *
+   * MATCH QUALITY. Raw distance is meaningless on its own: 0.6 is close for one
+   * letter and far for another, because letters sit at different densities in
+   * the feature space. So it is normalized against that letter's own
+   * nearest-other-letter distance — the point at which some other letter
+   * becomes the better answer. quality 1 means "on the pose", quality 0 means
+   * "far enough that another letter wins". That makes the brightening mean the
+   * same thing for every letter.
+   *
+   * The scale is cached per target letter, since nearestOtherDistance() walks
+   * every template pair and must not run per frame.
+   */
+  private updateReferenceHand(features: ArrayLike<number> | null): void {
+    if (!this.referenceHandVisualizer) {
+      return
+    }
+    if (!this.showReferenceHand || this.templates === null) {
+      this.referenceHandVisualizer.renderReference(null, 0)
+      return
+    }
+
+    const target = this.phrases.getState().currentLetter
+    if (target === null) {
+      // Phrase complete or idle: nothing to copy, so show nothing.
+      this.referenceHandVisualizer.renderReference(null, 0)
+      this.referenceLetter = null
+      return
+    }
+
+    if (target !== this.referenceLetter) {
+      this.referenceLetter = target
+      this.referencePose = this.poseFor(target)
+      const scale = this.nearestOtherDistance(target)
+      // Guard the degenerate case: a single loaded letter has no "other", and
+      // an orientation-collision partner sits at distance 0. Either would make
+      // the quality ramp divide by zero and flicker.
+      this.referenceScale = scale > 1e-4 && isFinite(scale) ? scale : 1
+    }
+
+    if (this.referencePose === null) {
+      this.referenceHandVisualizer.renderReference(null, 0)
+      return
+    }
+
+    let quality = 0
+    if (features !== null) {
+      const d = this.distanceTo(features, this.referencePose)
+      // Exponential falloff, not a linear ramp clamped at the scale.
+      //
+      // A linear `1 - d/scale` is degenerate in practice: measured against the
+      // shipped templates it returns exactly 1.00 when the pose matches and
+      // exactly 0.00 for every other letter, because every inter-letter
+      // distance already exceeds the scale. That makes the reference hand a
+      // binary light rather than the "you are getting closer" signal it is for.
+      //
+      // This halves brightness every `scale` of distance, so quality is 1 on
+      // the pose, 0.5 at the point another letter becomes equally good, and
+      // fades smoothly beyond — always non-zero, always moving.
+      quality = Math.exp(-Math.LN2 * (d / this.referenceScale))
+    }
+    this.referenceHandVisualizer.renderReference(this.referencePose, quality)
+  }
+
+  /** Euclidean distance between a live feature vector and a template pose. */
+  private distanceTo(a: ArrayLike<number>, b: ArrayLike<number>): number {
+    const n = Math.min(a.length, b.length)
+    let sum = 0
+    for (let i = 0; i < n; i++) {
+      const d = a[i] - b[i]
+      sum += d * d
+    }
+    return Math.sqrt(sum)
   }
 
   /** Parse a JsonAsset into a TemplatesFile, or null with a named error. */
@@ -396,6 +493,11 @@ export class SignBridge extends BaseScriptComponent {
           }
         }
       }
+
+      // Last, and deliberately AFTER submit(): a commit that advances the
+      // target must move the reference hand in the same frame the letter turns
+      // green, or the signer is shown the letter they just finished.
+      this.updateReferenceHand(features)
     }
 
     updateSignPanels([this.inwardPanel, this.outwardPanel], this.buildView())

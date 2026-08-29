@@ -202,6 +202,18 @@ export class HandVisualizer extends BaseScriptComponent {
   boneDimming: number = 0.55
   @ui.group_end
 
+  @ui.group_start("Reference hand colour")
+  @input
+  @widget(new ColorWidget())
+  @hint("REFERENCE INSTANCE ONLY. Colour when the live hand is far from this pose. Keep it dim and cool so the reference never competes with the live hand for attention.")
+  matchFarColor: vec4 = new vec4(0.30, 0.42, 0.52, 0.55)
+
+  @input
+  @widget(new ColorWidget())
+  @hint("REFERENCE INSTANCE ONLY. Colour when the live hand is on this pose. The reference brightening is the 'you're getting closer' signal.")
+  matchNearColor: vec4 = new vec4(0.35, 0.95, 0.85, 1)
+  @ui.group_end
+
   @ui.group_start("Behaviour")
   @input
   @hint("Hide the rig on untracked frames. On means the gaps in the input are visible as gaps — recommended, since the point is to show the real input.")
@@ -317,6 +329,50 @@ export class HandVisualizer extends BaseScriptComponent {
       this.visible = true
     }
 
+    this.drawPose(features)
+    this.applyColor(hold)
+  }
+
+  /**
+   * Draw a fixed pose tinted by how well the live hand matches it — the
+   * REFERENCE path.
+   *
+   * Deliberately separate from render(): a reference hand shows a target, not
+   * an input, so it must never take its colour from HoldBuffer state. Its
+   * colour answers one question only — how close is the user's hand to THIS
+   * pose — and it has no commit pulse, because a reference hand cannot commit.
+   *
+   * @param features the target letter's template vector
+   * @param quality 0 = far from this pose, 1 = on it
+   */
+  renderReference(features: ArrayLike<number> | null, quality: number): void {
+    if (this.rig === null) {
+      return
+    }
+    const usable = features !== null && features.length >= LANDMARK_COUNT * 3
+    if (!usable) {
+      if (this.visible) {
+        this.rig.enabled = false
+        this.visible = false
+      }
+      return
+    }
+    if (!this.visible) {
+      this.rig.enabled = true
+      this.visible = true
+    }
+
+    this.drawPose(features)
+
+    const q = quality < 0 ? 0 : quality > 1 ? 1 : quality
+    const color = mixColor(this.matchFarColor, this.matchNearColor, q)
+    this.jointMaterial.mainPass.baseColor = color
+    const d = this.boneDimming
+    this.boneMaterial.mainPass.baseColor = new vec4(color.x * d, color.y * d, color.z * d, color.w)
+  }
+
+  /** Write one 78-dim vector into the joint and bone transforms. */
+  private drawPose(features: ArrayLike<number>): void {
     const s = this.handScale
     // middleKnuckle sits at (0,1,0) in normalized space; subtracting it centres
     // the hand on the rig origin instead of hanging it off the wrist.
@@ -357,8 +413,6 @@ export class HandVisualizer extends BaseScriptComponent {
       t.setLocalRotation(quat.rotationFromTo(this.up, new vec3(dx / length, dy / length, dz / length)))
       t.setLocalScale(new vec3(thick, length, thick))
     }
-
-    this.applyColor(hold)
   }
 
   private applyColor(hold: HoldState): void {

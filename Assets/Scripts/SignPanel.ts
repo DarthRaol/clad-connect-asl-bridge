@@ -157,13 +157,13 @@ export function updateSignPanels(panels: (SignPanel | null | undefined)[], view:
   }
 }
 
-/** vec4 colour to the `#rrggbb` form rich-text markup expects. */
 /** Componentwise blend, for the confidence bar's neutral -> warm ramp. */
 function mixColor(a: vec4, b: vec4, t: number): vec4 {
   const k = clamp01(t)
   return new vec4(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k, a.w + (b.w - a.w) * k)
 }
 
+/** vec4 colour to the `#rrggbb` form rich-text markup expects. */
 function toHex(c: vec4): string {
   const ch = (v: number) => {
     let n = Math.round(clamp01(v) * 255)
