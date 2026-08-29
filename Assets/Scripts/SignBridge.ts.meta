@@ -30,6 +30,7 @@
   ScriptInputsHidden:
     autoAdvanceSeconds: false
     autoAdvanceTailGap: false
+    demoPoseAsset: false
     featureMode: false
     handVisualizer: false
     inwardPanel: false
@@ -60,6 +61,7 @@
       outwardPanel: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
       mockHandInput: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
       handVisualizer: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
+      demoPoseAsset: !<reference.Asset> 00000000-0000-0000-0000-000000000000
       letterCommitAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
       phraseCompleteAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
       autoAdvanceSeconds: !<float> 0.000000
@@ -85,6 +87,7 @@
     - '// @input AssignableType_2 outwardPanel {"hint":"Reader-facing panel: the assembled text."}'
     - '// @input AssignableType_3 mockHandInput {"hint":"Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware."}'
     - '// @input AssignableType_4 handVisualizer {"hint":"Optional. Draws the exact feature vector the classifier scores, as a hand between the panels."}'
+    - '// @input Asset.Asset demoPoseAsset {"hint":"DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs."}'
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"group_start", "label":"Audio"}'
     - '// @input Component.AudioComponent letterCommitAudio {"hint":"Short chime on each committed letter. Set to LowLatency at start so it lands on the commit frame."}'

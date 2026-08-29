@@ -132,7 +132,7 @@ It does not translate ASL. ASL is a full language with its own grammar, spatial 
 
 ## Testing
 
-Five LEAF scenarios run against the live Lens in preview, driving `SignBridge` through `MockHandInput`:
+Six LEAF scenarios run against the live Lens in preview, driving `SignBridge` through `MockHandInput`:
 
 | scenario | asserts |
 |---|---|
@@ -141,8 +141,11 @@ Five LEAF scenarios run against the live Lens in preview, driving `SignBridge` t
 | `signbridge-interrupted-hold` | a hold broken midway does not commit |
 | `signbridge-wrong-letter-does-not-advance` | a wrong commit is recorded, index does not advance |
 | `signbridge-no-spurious-double` | one rejected frame does not re-arm into a double commit |
+| `signbridge-alphabet-coverage` | all 26 letters have a defined behaviour: 6 recognized end-to-end, 18 absent and refused by phrase gating, J/Z excluded as motion letters |
 
-The suite was **mutation-tested**: reverting the re-arm fix (`rearmFrames` 3 → 1) made `signbridge-no-spurious-double` fail with `Expected: "0" — Received: "1"`, proving the scenario detects the real bug rather than passing vacuously.
+The suite is **mutation-tested**, twice. Reverting the re-arm fix (`rearmFrames` 3 → 1) made `signbridge-no-spurious-double` fail with `Expected: "0" — Received: "1"`. Making `unsignableLetters()` return `[]` — the exact regression where templates change but phrase gating does not — made `signbridge-alphabet-coverage` fail with `Expected: "> -1" — Received: "-1"`, and collapsed the phrase menu from 1 seatable phrase to all 14. Both guards fire; neither passes vacuously.
+
+Separately, `node tools/characterize-alphabet.js` runs leave-one-out k-NN across all 24 static letters and pins the observed behaviour, exiting non-zero if it drifts from what these docs claim.
 
 ## Built with CLAD
 

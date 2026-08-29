@@ -4737,12 +4737,12 @@
           "name": "SignPanel",
           "enabled": true,
           "properties": {
-            "headerLabel": {
+            "barWarmColor": {
               "isScriptInput": true,
-              "value": "SIGNING",
-              "type": "string",
-              "uiInfo": "{\"hint\":\"Small caption above the target word. Empty string hides it.\"}",
-              "defaultValue": "SIGNING"
+              "value": "{x: 1, y: 0.72, z: 0.18, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour as progress approaches a commit. Matches HandVisualizer's warming amber.\", \"widget\":\"color\"}",
+              "defaultValue": "{1,0.72,0.18,1}"
             },
             "assembledColor": {
               "isScriptInput": true,
@@ -4751,12 +4751,19 @@
               "uiInfo": "{\"hint\":\"The assembled text the reader is here to read. Keep this the brightest thing on the panel.\", \"widget\":\"color\"}",
               "defaultValue": "{1,1,1,1}"
             },
+            "barConfirmColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.24, y: 0.94, z: 0.46, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour on the commit frame, when progress reaches 1.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.24,0.94,0.46,1}"
+            },
             "barHeight": {
               "isScriptInput": true,
-              "value": 1.2000000476837158,
+              "value": 1.7999999523162842,
               "type": "float",
-              "uiInfo": "{\"hint\":\"Height of the confidence bar.\", \"widget\":\"slider\", \"min\":0.4, \"max\":2.5, \"step\":0.1}",
-              "defaultValue": "1.2"
+              "uiInfo": "{\"hint\":\"Height of the confidence bar. Corner radius follows it, so the bar is always a pill.\", \"widget\":\"slider\", \"min\":0.4, \"max\":2.5, \"step\":0.1}",
+              "defaultValue": "1.8"
             },
             "captionColor": {
               "isScriptInput": true,
@@ -4764,6 +4771,27 @@
               "type": "vec4",
               "uiInfo": "{\"hint\":\"Header caption and the idle status line.\", \"widget\":\"color\"}",
               "defaultValue": "{1,1,1,0.55}"
+            },
+            "barNeutralColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.36, y: 0.58, z: 0.88, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour while progress is low. Matches HandVisualizer's neutral, so the bar and the hand agree.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.36,0.58,0.88,1}"
+            },
+            "barWidthFraction": {
+              "isScriptInput": true,
+              "value": 0.7200000286102295,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Bar width as a fraction of the panel's inner width. Below 1 keeps the bar inside the text column instead of running edge to edge.\", \"widget\":\"slider\", \"min\":0.3, \"max\":1, \"step\":0.05}",
+              "defaultValue": "0.72"
+            },
+            "barTrackColor": {
+              "isScriptInput": true,
+              "value": "{x: 1, y: 1, z: 1, w: 0.16}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Unfilled track. Needs enough alpha to read as an empty bar rather than as nothing.\", \"widget\":\"color\"}",
+              "defaultValue": "{1,1,1,0.16}"
             },
             "currentColor": {
               "isScriptInput": true,
@@ -4792,6 +4820,13 @@
               "type": "bool",
               "uiInfo": "{\"hint\":\"Rotate 180 degrees so the panel faces AWAY from the wearer. The reader is not the wearer. Turn OFF for a wearer-facing mirror of the same panel.\"}",
               "defaultValue": "true"
+            },
+            "headerLabel": {
+              "isScriptInput": true,
+              "value": "SIGNING",
+              "type": "string",
+              "uiInfo": "{\"hint\":\"Small caption above the target word. Empty string hides it.\"}",
+              "defaultValue": "SIGNING"
             },
             "padding": {
               "isScriptInput": true,
@@ -4872,24 +4907,29 @@
             },
             "scriptAsset": "@asset:Scripts/SignPanel.ts",
             "inputNames.0": "assembledColor",
-            "inputNames.1": "barHeight",
-            "inputNames.2": "captionColor",
-            "inputNames.3": "currentColor",
-            "inputNames.4": "doneColor",
-            "inputNames.5": "emptyPlaceholder",
-            "inputNames.6": "faceOutward",
-            "inputNames.7": "headerLabel",
-            "inputNames.8": "padding",
-            "inputNames.9": "panelWidth",
-            "inputNames.10": "pendingColor",
-            "inputNames.11": "rowGap",
-            "inputNames.12": "showAssembledText",
-            "inputNames.13": "showConfidenceBar",
-            "inputNames.14": "showHeader",
-            "inputNames.15": "showStatusLine",
-            "inputNames.16": "showTargetWord",
-            "inputNames.17": "skippedColor",
-            "inputNames.18": "wrongColor",
+            "inputNames.1": "barConfirmColor",
+            "inputNames.2": "barHeight",
+            "inputNames.3": "barNeutralColor",
+            "inputNames.4": "barTrackColor",
+            "inputNames.5": "barWarmColor",
+            "inputNames.6": "barWidthFraction",
+            "inputNames.7": "captionColor",
+            "inputNames.8": "currentColor",
+            "inputNames.9": "doneColor",
+            "inputNames.10": "emptyPlaceholder",
+            "inputNames.11": "faceOutward",
+            "inputNames.12": "headerLabel",
+            "inputNames.13": "padding",
+            "inputNames.14": "panelWidth",
+            "inputNames.15": "pendingColor",
+            "inputNames.16": "rowGap",
+            "inputNames.17": "showAssembledText",
+            "inputNames.18": "showConfidenceBar",
+            "inputNames.19": "showHeader",
+            "inputNames.20": "showStatusLine",
+            "inputNames.21": "showTargetWord",
+            "inputNames.22": "skippedColor",
+            "inputNames.23": "wrongColor",
             "name": "SignPanel",
             "enabled": true,
             "sceneObject": "@sceneObject:SignPanelOutward",
@@ -4931,12 +4971,12 @@
           "name": "SignPanel",
           "enabled": true,
           "properties": {
-            "headerLabel": {
+            "barWarmColor": {
               "isScriptInput": true,
-              "value": "SIGNING",
-              "type": "string",
-              "uiInfo": "{\"hint\":\"Small caption above the target word. Empty string hides it.\"}",
-              "defaultValue": "SIGNING"
+              "value": "{x: 1, y: 0.72, z: 0.18, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour as progress approaches a commit. Matches HandVisualizer's warming amber.\", \"widget\":\"color\"}",
+              "defaultValue": "{1,0.72,0.18,1}"
             },
             "assembledColor": {
               "isScriptInput": true,
@@ -4945,12 +4985,19 @@
               "uiInfo": "{\"hint\":\"The assembled text the reader is here to read. Keep this the brightest thing on the panel.\", \"widget\":\"color\"}",
               "defaultValue": "{1,1,1,1}"
             },
+            "barConfirmColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.24, y: 0.94, z: 0.46, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour on the commit frame, when progress reaches 1.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.24,0.94,0.46,1}"
+            },
             "barHeight": {
               "isScriptInput": true,
-              "value": 1.2000000476837158,
+              "value": 1.7999999523162842,
               "type": "float",
-              "uiInfo": "{\"hint\":\"Height of the confidence bar.\", \"widget\":\"slider\", \"min\":0.4, \"max\":2.5, \"step\":0.1}",
-              "defaultValue": "1.2"
+              "uiInfo": "{\"hint\":\"Height of the confidence bar. Corner radius follows it, so the bar is always a pill.\", \"widget\":\"slider\", \"min\":0.4, \"max\":2.5, \"step\":0.1}",
+              "defaultValue": "1.8"
             },
             "captionColor": {
               "isScriptInput": true,
@@ -4958,6 +5005,27 @@
               "type": "vec4",
               "uiInfo": "{\"hint\":\"Header caption and the idle status line.\", \"widget\":\"color\"}",
               "defaultValue": "{1,1,1,0.55}"
+            },
+            "barNeutralColor": {
+              "isScriptInput": true,
+              "value": "{x: 0.36, y: 0.58, z: 0.88, w: 1}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Fill colour while progress is low. Matches HandVisualizer's neutral, so the bar and the hand agree.\", \"widget\":\"color\"}",
+              "defaultValue": "{0.36,0.58,0.88,1}"
+            },
+            "barWidthFraction": {
+              "isScriptInput": true,
+              "value": 0.7200000286102295,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Bar width as a fraction of the panel's inner width. Below 1 keeps the bar inside the text column instead of running edge to edge.\", \"widget\":\"slider\", \"min\":0.3, \"max\":1, \"step\":0.05}",
+              "defaultValue": "0.72"
+            },
+            "barTrackColor": {
+              "isScriptInput": true,
+              "value": "{x: 1, y: 1, z: 1, w: 0.16}",
+              "type": "vec4",
+              "uiInfo": "{\"hint\":\"Unfilled track. Needs enough alpha to read as an empty bar rather than as nothing.\", \"widget\":\"color\"}",
+              "defaultValue": "{1,1,1,0.16}"
             },
             "currentColor": {
               "isScriptInput": true,
@@ -4986,6 +5054,13 @@
               "type": "bool",
               "uiInfo": "{\"hint\":\"Rotate 180 degrees so the panel faces AWAY from the wearer. The reader is not the wearer. Turn OFF for a wearer-facing mirror of the same panel.\"}",
               "defaultValue": "true"
+            },
+            "headerLabel": {
+              "isScriptInput": true,
+              "value": "SIGNING",
+              "type": "string",
+              "uiInfo": "{\"hint\":\"Small caption above the target word. Empty string hides it.\"}",
+              "defaultValue": "SIGNING"
             },
             "padding": {
               "isScriptInput": true,
@@ -5066,24 +5141,29 @@
             },
             "scriptAsset": "@asset:Scripts/SignPanel.ts",
             "inputNames.0": "assembledColor",
-            "inputNames.1": "barHeight",
-            "inputNames.2": "captionColor",
-            "inputNames.3": "currentColor",
-            "inputNames.4": "doneColor",
-            "inputNames.5": "emptyPlaceholder",
-            "inputNames.6": "faceOutward",
-            "inputNames.7": "headerLabel",
-            "inputNames.8": "padding",
-            "inputNames.9": "panelWidth",
-            "inputNames.10": "pendingColor",
-            "inputNames.11": "rowGap",
-            "inputNames.12": "showAssembledText",
-            "inputNames.13": "showConfidenceBar",
-            "inputNames.14": "showHeader",
-            "inputNames.15": "showStatusLine",
-            "inputNames.16": "showTargetWord",
-            "inputNames.17": "skippedColor",
-            "inputNames.18": "wrongColor",
+            "inputNames.1": "barConfirmColor",
+            "inputNames.2": "barHeight",
+            "inputNames.3": "barNeutralColor",
+            "inputNames.4": "barTrackColor",
+            "inputNames.5": "barWarmColor",
+            "inputNames.6": "barWidthFraction",
+            "inputNames.7": "captionColor",
+            "inputNames.8": "currentColor",
+            "inputNames.9": "doneColor",
+            "inputNames.10": "emptyPlaceholder",
+            "inputNames.11": "faceOutward",
+            "inputNames.12": "headerLabel",
+            "inputNames.13": "padding",
+            "inputNames.14": "panelWidth",
+            "inputNames.15": "pendingColor",
+            "inputNames.16": "rowGap",
+            "inputNames.17": "showAssembledText",
+            "inputNames.18": "showConfidenceBar",
+            "inputNames.19": "showHeader",
+            "inputNames.20": "showStatusLine",
+            "inputNames.21": "showTargetWord",
+            "inputNames.22": "skippedColor",
+            "inputNames.23": "wrongColor",
             "name": "SignPanel",
             "enabled": true,
             "sceneObject": "@sceneObject:SignPanelInward",
@@ -5221,17 +5301,27 @@
           "name": "SignBridge",
           "enabled": true,
           "properties": {
+            "verbose": {
+              "isScriptInput": true,
+              "value": true,
+              "type": "bool",
+              "uiInfo": "{\"hint\":\"Log a line on every commit, wrong letter and phrase completion.\"}",
+              "defaultValue": "true"
+            },
+            "demoPoseAsset": {
+              "isScriptInput": true,
+              "value": {
+                "UUID": "e15a3e73-632d-42fe-b65e-6b3409c5a2f9",
+                "name": "poses.demo"
+              },
+              "type": "Asset.Asset",
+              "uiInfo": "{\"hint\":\"DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs.\"}"
+            },
             "autoAdvanceSeconds": {
               "isScriptInput": true,
               "value": 0,
               "type": "float",
               "uiInfo": "{\"hint\":\"Seconds to wait after completing a phrase before seating the next. 0 disables auto-advance. If below the completion sound's length it is raised, so the next phrase never starts under the tail.\", \"widget\":\"slider\", \"min\":0, \"max\":10, \"step\":0.25}"
-            },
-            "maxDistance": {
-              "isScriptInput": true,
-              "value": 0,
-              "type": "float",
-              "uiInfo": "{\"hint\":\"Max template distance for a frame to count as a letter. 0 DISABLES the gate — calibrate from the _NEGATIVE separation.\", \"widget\":\"slider\", \"min\":0, \"max\":10, \"step\":0.1}"
             },
             "letterCommitAudio": {
               "isScriptInput": true,
@@ -5290,6 +5380,12 @@
               "type": "AssignableType_4",
               "uiInfo": "{\"hint\":\"Optional. Draws the exact feature vector the classifier scores, as a hand between the panels.\"}"
             },
+            "maxDistance": {
+              "isScriptInput": true,
+              "value": 0,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"Max template distance for a frame to count as a letter. 0 DISABLES the gate — calibrate from the _NEGATIVE separation.\", \"widget\":\"slider\", \"min\":0, \"max\":10, \"step\":0.1}"
+            },
             "minMeanConfidence": {
               "isScriptInput": true,
               "value": 0.30000001192092896,
@@ -5345,13 +5441,6 @@
               "uiInfo": "{\"hint\":\"Weight on the thumb landmarks — the M/N/S/T separator. 1 = uniform. Remember weights hit SQUARED distance, so 2 is 4x the influence.\", \"widget\":\"slider\", \"min\":1, \"max\":4, \"step\":0.25}",
               "defaultValue": "1"
             },
-            "verbose": {
-              "isScriptInput": true,
-              "value": true,
-              "type": "bool",
-              "uiInfo": "{\"hint\":\"Log a line on every commit, wrong letter and phrase completion.\"}",
-              "defaultValue": "true"
-            },
             "windowFrames": {
               "isScriptInput": true,
               "value": 18,
@@ -5362,22 +5451,23 @@
             "scriptAsset": "@asset:Scripts/SignBridge.ts",
             "inputNames.0": "autoAdvanceSeconds",
             "inputNames.1": "autoAdvanceTailGap",
-            "inputNames.2": "featureMode",
-            "inputNames.3": "handVisualizer",
-            "inputNames.4": "inwardPanel",
-            "inputNames.5": "k",
-            "inputNames.6": "letterCommitAudio",
-            "inputNames.7": "maxDistance",
-            "inputNames.8": "minMeanConfidence",
-            "inputNames.9": "mockHandInput",
-            "inputNames.10": "outwardPanel",
-            "inputNames.11": "phraseCompleteAudio",
-            "inputNames.12": "rearmFrames",
-            "inputNames.13": "signingHand",
-            "inputNames.14": "templatesAsset",
-            "inputNames.15": "thumbWeight",
-            "inputNames.16": "verbose",
-            "inputNames.17": "windowFrames",
+            "inputNames.2": "demoPoseAsset",
+            "inputNames.3": "featureMode",
+            "inputNames.4": "handVisualizer",
+            "inputNames.5": "inwardPanel",
+            "inputNames.6": "k",
+            "inputNames.7": "letterCommitAudio",
+            "inputNames.8": "maxDistance",
+            "inputNames.9": "minMeanConfidence",
+            "inputNames.10": "mockHandInput",
+            "inputNames.11": "outwardPanel",
+            "inputNames.12": "phraseCompleteAudio",
+            "inputNames.13": "rearmFrames",
+            "inputNames.14": "signingHand",
+            "inputNames.15": "templatesAsset",
+            "inputNames.16": "thumbWeight",
+            "inputNames.17": "verbose",
+            "inputNames.18": "windowFrames",
             "name": "SignBridge",
             "enabled": true,
             "sceneObject": "@sceneObject:SignBridge",
@@ -5745,6 +5835,48 @@
             "hasPrefabChanges": false,
             "id": "3344252b-df83-45a4-858a-dbf1f3e97cdf",
             "type": "AudioComponent"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eca05ffd-9093-47d7-8d77-5863c9c189fb",
+      "name": "AiPreviewAgent Handler",
+      "enabled": true,
+      "parentId": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "layers": 1,
+      "components": [
+        {
+          "id": "591e9b96-99c0-4cf3-8358-037682dbd879",
+          "type": "ScriptComponent",
+          "name": "AgentInspectScript",
+          "enabled": true,
+          "properties": {
+            "scriptAsset": "@asset:Packages/AiPreviewAgentInspect.lspkg/AgentInspectScript.ts",
+            "name": "AgentInspectScript",
+            "enabled": true,
+            "sceneObject": "@sceneObject:AiPreviewAgent Handler",
+            "isPrefabInstanceRoot": false,
+            "hasPrefabChanges": false,
+            "id": "591e9b96-99c0-4cf3-8358-037682dbd879",
+            "type": "ScriptComponent"
           }
         }
       ]

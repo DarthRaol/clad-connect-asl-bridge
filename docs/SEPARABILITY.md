@@ -37,30 +37,30 @@ All four were needed. Under the previous binary model U, H and R collapsed to di
 
 ```
 letter   within   nearest-other      ratio   verdict
-  G      0.357      0.000 (Q)      0.00x   FAIL
-  H      0.378      0.000 (U)      0.00x   FAIL
-  K      0.452      0.000 (P)      0.00x   FAIL
-  P      0.397      0.000 (K)      0.00x   FAIL
-  Q      0.328      0.000 (G)      0.00x   FAIL
-  U      0.356      0.000 (H)      0.00x   FAIL
-  S      0.367      0.308 (N)      0.84x   FAIL
-  M      0.319      0.281 (N)      0.88x   FAIL
-  N      0.295      0.281 (M)      0.95x   FAIL
-  V      0.339      0.339 (H)      1.00x   FAIL
-  T      0.326      0.325 (N)      1.00x   FAIL
-  R      0.360      0.365 (H)      1.01x   FAIL
-  A      0.333      0.506 (T)      1.52x   pass
-  O      0.406      0.620 (E)      1.53x   pass
-  L      0.383      0.620 (G)      1.62x   pass
-  X      0.388      0.643 (N)      1.66x   pass
-  E      0.305      0.581 (N)      1.90x   pass
-  D      0.400      1.101 (G)      2.75x   pass
-  C      0.474      1.366 (B)      2.88x   pass
-  I      0.341      1.058 (Y)      3.10x   pass
-  B      0.401      1.365 (W)      3.40x   pass
-  Y      0.292      1.058 (I)      3.63x   pass
-  W      0.343      1.365 (B)      3.98x   pass
-  F      0.327      1.460 (C)      4.46x   pass
+  G      0.309      0.000 (Q)      0.00x   FAIL
+  H      0.391      0.000 (U)      0.00x   FAIL
+  K      0.400      0.000 (P)      0.00x   FAIL
+  P      0.384      0.000 (K)      0.00x   FAIL
+  Q      0.331      0.000 (G)      0.00x   FAIL
+  U      0.350      0.000 (H)      0.00x   FAIL
+  V      0.440      0.339 (H)      0.77x   FAIL
+  R      0.443      0.365 (H)      0.82x   FAIL
+  S      0.345      0.308 (N)      0.89x   FAIL
+  M      0.297      0.281 (N)      0.95x   FAIL
+  N      0.292      0.281 (M)      0.96x   FAIL
+  T      0.319      0.325 (N)      1.02x   FAIL
+  A      0.337      0.506 (T)      1.50x   pass
+  O      0.353      0.585 (E)      1.66x   pass
+  L      0.383      0.643 (G)      1.68x   pass
+  E      0.319      0.539 (N)      1.69x   pass
+  X      0.315      0.589 (N)      1.87x   pass
+  C      0.540      1.505 (F)      2.79x   pass
+  D      0.393      1.096 (G)      2.79x   pass
+  Y      0.341      1.094 (I)      3.21x   pass
+  I      0.338      1.094 (Y)      3.24x   pass
+  W      0.417      1.367 (B)      3.28x   pass
+  B      0.352      1.367 (W)      3.88x   pass
+  F      0.315      1.505 (C)      4.78x   pass
 ```
 
 ### Worst 5 pairs
@@ -69,11 +69,11 @@ Pair ratio is the minimum inter-letter distance over the pooled within-letter sp
 
 | pair | min distance | pooled spread | ratio |
 |---|---|---|---|
-| G–Q | 0.000 | 0.342 | 0.00× |
-| H–U | 0.000 | 0.367 | 0.00× |
-| K–P | 0.000 | 0.424 | 0.00× |
-| M–N | 0.281 | 0.307 | 0.92× |
-| N–S | 0.308 | 0.331 | 0.93× |
+| G–Q | 0.000 | 0.320 | 0.00× |
+| H–U | 0.000 | 0.370 | 0.00× |
+| K–P | 0.000 | 0.392 | 0.00× |
+| H–V | 0.339 | 0.416 | 0.82× |
+| U–V | 0.339 | 0.395 | 0.86× |
 
 ---
 
@@ -120,7 +120,7 @@ This limitation is visible in the running demo — form K, form P, and the rende
 
 ### 9 letters: real signal, drowned by noise
 
-**M, N, S, T, V, R** and their partners sit at 0.28–0.40 in pure pose distance, against a within-letter noise floor of 0.30–0.45 at 0.22 cm jitter. The differences are real; they are simply smaller than the noise.
+**M, N, S, T, V, R** and their partners sit at 0.28–0.40 in pure pose distance, against a within-letter noise floor of 0.29–0.54 at 0.22 cm jitter. The differences are real; they are simply smaller than the noise.
 
 These are recoverable:
 
@@ -137,11 +137,11 @@ None of that is worth doing against synthetic data. All of it becomes possible a
 Greedily dropping the worst-separated letter until every survivor clears 1.5× yields 16:
 
 ```
-keep (16): A B C D E F I L N O Q R V W X Y
-drop  (8): G H K S M U T P
+keep (16): A B C D E F I L N O P Q U W X Y
+drop  (8): G H K V R S M T
 ```
 
-**This number is misleading and was not adopted.** It survives by keeping one arbitrary representative of each collapsed pair — it keeps Q and drops G, keeps V and drops U. A signer forming G would be shown Q. A set that is internally separable but externally mislabelled is worse than a smaller honest one.
+**This number is misleading and was not adopted.** It survives by keeping one arbitrary representative of each collapsed pair — it keeps Q and drops G, keeps U and drops H, keeps P and drops K. A signer forming G would be shown Q, and one forming K would be shown P. A set that is internally separable but externally mislabelled is worse than a smaller honest one.
 
 ---
 
@@ -193,3 +193,33 @@ L's figure is a rounding coincidence rather than a no-op: L–P was 1.373078 and
 Note that K's nearest confuser in the shipped file was never P — it was U, at 0.852. The exposure P created was on hardware, not in the fixture. It is now unreachable because P is not a candidate.
 
 **Shipped set: L, U, K, E, C, O.** Six letters, 30 samples, runtime-confirmed.
+
+---
+
+## What the classifier actually returns
+
+The gate is a geometry measure — it says classes overlap. It does not say what the classifier returns. `node tools/characterize-alphabet.js` answers that separately, with leave-one-out k-NN using the same scoring as `Assets/Scripts/Classifier.ts`: every sample is classified against every template except itself.
+
+```
+letter   LOO      gate      nearest   returned instead
+  P     0/5       0.00x    K        Kx5
+  Q     0/5       0.00x    G        Gx5
+  U     0/5       0.00x    H        Hx5
+  K     2/5       0.00x    P        Px3
+  H     3/5       0.00x    U        Ux2
+  G     4/5       0.00x    Q        Qx1
+  V     5/5       0.77x    H        -
+  R     5/5       0.82x    H        -
+  S     5/5       0.89x    N        -
+  M     5/5       0.95x    N        -
+  N     5/5       0.96x    M        -
+  T     5/5       1.02x    N        -
+  ... the remaining 12 all 5/5
+```
+
+**The two measures disagree, and the disagreement is the finding.**
+
+- **6 letters misclassify: G, H, K, P, Q, U.** Every single misclassification is into that letter's orientation partner — P→K, Q→G, U→H at 5/5, and K→P, H→U, G→Q partially, with jitter deciding the coin flip. Nothing else in the alphabet is ever confused. That is the orientation collapse showing up in behaviour, not just in geometry.
+- **6 letters fail the gate but still classify 5/5: M, N, R, S, T, V.** Their classes overlap, yet each letter's own samples remain nearest. Reporting these as failures would overstate the problem; reporting them as fine would understate it. They are the letters real templates would decide, and synthetic geometry cannot.
+
+Both sets are pinned in the tool, which exits non-zero if either drifts — so the numbers quoted here and in the README are a claim under test rather than a snapshot that quietly goes stale.

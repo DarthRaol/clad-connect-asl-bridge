@@ -33,7 +33,7 @@ import {
 import {HandVisualizer} from "./HandVisualizer"
 import {PhraseController} from "./PhraseController"
 import {SignPanel, SignPanelView, updateSignPanels} from "./SignPanel"
-import {extractNormalized, TemplatesFile} from "./TemplateFormat"
+import {extractNormalized, letterKeys, TemplatesFile} from "./TemplateFormat"
 
 /** One step of a scripted mock playback. See SignBridge.playScript(). */
 export type BridgeScriptStep = {
@@ -75,6 +75,11 @@ export class SignBridge extends BaseScriptComponent {
   @allowUndefined
   @hint("Optional. Draws the exact feature vector the classifier scores, as a hand between the panels.")
   handVisualizer: HandVisualizer
+
+  @input
+  @allowUndefined
+  @hint("DEMO ONLY. A display-only pose file (Assets/Data/poses.demo.json) for the mock to replay INSTEAD of the templates. Its letters are NOT added to the classifier — they stay unrecognized on purpose. Leave unwired for normal runs.")
+  demoPoseAsset: Asset
   @ui.group_end
 
   @ui.group_start("Audio")
@@ -246,18 +251,24 @@ export class SignBridge extends BaseScriptComponent {
     this.phrases.setAutoAdvanceSeconds(advance)
   }
 
+  /** Parse a JsonAsset into a TemplatesFile, or null with a named error. */
+  private readTemplatesAsset(asset: Asset, label: string): TemplatesFile | null {
+    try {
+      return JSON.parse((asset as JsonAsset).getString()) as TemplatesFile
+    } catch (e) {
+      print("SignBridge ERROR: could not read " + label + " (" + e + ").")
+      return null
+    }
+  }
+
   private loadTemplates(): void {
     if (!this.templatesAsset) {
       print("SignBridge ERROR: no templatesAsset wired. Nothing can be classified.")
       return
     }
 
-    let parsed: TemplatesFile
-    try {
-      const json = (this.templatesAsset as JsonAsset).getString()
-      parsed = JSON.parse(json) as TemplatesFile
-    } catch (e) {
-      print("SignBridge ERROR: could not read templatesAsset (" + e + ").")
+    const parsed = this.readTemplatesAsset(this.templatesAsset, "templatesAsset")
+    if (parsed === null) {
       return
     }
 
@@ -293,8 +304,33 @@ export class SignBridge extends BaseScriptComponent {
 
     // Drive the mock from the same templates, so the Editor replays the exact
     // poses the classifier was loaded with.
+    //
+    // DEMO PATH: when demoPoseAsset is wired the mock replays THAT instead. The
+    // classifier is deliberately not told about those poses — this is how a
+    // handshape the Lens cannot recognize gets played on camera, so a
+    // limitation can be shown rather than merely described. The separation is
+    // the whole point: loadTemplates() above has already run against
+    // templatesAsset and is not touched here, so the candidate set, the phrase
+    // gating and unsignableLetters() all stay exactly as they were.
     if (this.mockHandInput) {
-      this.mockHandInput.loadFromTemplates(parsed, {framesPerPose: 30, gapFrames: 12})
+      let poses = parsed
+      let source = "templates"
+      if (this.demoPoseAsset) {
+        const demo = this.readTemplatesAsset(this.demoPoseAsset, "demoPoseAsset")
+        if (demo !== null) {
+          poses = demo
+          source = "DEMO POSES"
+        }
+      }
+      this.mockHandInput.loadFromTemplates(poses, {framesPerPose: 30, gapFrames: 12})
+      if (source !== "templates") {
+        const shown = letterKeys(poses).join(",")
+        print(
+          "SignBridge: mock is replaying DEMO POSES (" + shown + "), not the template set. " +
+            "The classifier still knows only [" + this.classifier.loadedLetters().join(",") + "] — " +
+            "anything else is drawn but unrecognized, by design. Unwire demoPoseAsset for a normal run."
+        )
+      }
     }
 
     this.ready = true
@@ -378,8 +414,31 @@ export class SignBridge extends BaseScriptComponent {
       progress: holdState.progress,
       candidate: holdState.candidate,
       wrongSigned: isWrong ? phraseState.wrongLetter : null,
-      wrongExpected: isWrong ? phraseState.currentLetter : null
+      wrongExpected: isWrong ? phraseState.currentLetter : null,
+      demoLabel: this.currentDemoLabel()
     }
+  }
+
+  /**
+   * The pose label to print on the status line, or null on any normal run.
+   *
+   * Gated on `demoPoseAsset` being wired — not on a debug flag or on whether a
+   * mock happens to be present — so the shipped experience cannot show this
+   * even if a MockHandInput is left in the scene by accident.
+   *
+   * Returns null on untracked frames too: the mock labels its gap steps "gap",
+   * and printing "DEMO POSE: gap" while no hand is drawn would be noise.
+   */
+  private currentDemoLabel(): string | null {
+    if (!this.demoPoseAsset || !this.mockHandInput) {
+      return null
+    }
+    const active = getActiveHandFeatureSource()
+    if (active === null || !active.isTracked()) {
+      return null
+    }
+    const label = active.currentLabel()
+    return label && label !== "gap" && label !== "untracked" ? label : null
   }
 
   /**
@@ -452,6 +511,17 @@ export class SignBridge extends BaseScriptComponent {
   /** Letters the classifier can actually produce. */
   getLoadedLetters(): string[] {
     return this.classifier.loadedLetters()
+  }
+
+  /**
+   * Letters in `phrase` that the loaded template set cannot produce.
+   *
+   * Exposed for the alphabet-coverage scenario: recognition and phrase gating
+   * are two different guarantees, and a letter being absent from the templates
+   * is only safe if the phrase layer also refuses to seat words needing it.
+   */
+  unsignableLetters(phrase: string): string[] {
+    return this.phrases.unsignableLetters(phrase)
   }
 
   /** Euclidean distance between two letters' first templates. */

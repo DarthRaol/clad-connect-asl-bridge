@@ -33,6 +33,7 @@
  */
 
 import {BackPlate} from "SpectaclesUIKit.lspkg/Scripts/BackPlate"
+import {RoundedRectangle} from "SpectaclesUIKit.lspkg/Scripts/Visuals/RoundedRectangle/RoundedRectangle"
 import {FlexItem} from "SpectaclesUIKit.lspkg/Scripts/Components/Layout2D/Flex/FlexItem"
 import {FlexLayout} from "SpectaclesUIKit.lspkg/Scripts/Components/Layout2D/Flex/FlexLayout"
 import {
@@ -122,6 +123,20 @@ export type SignPanelView = {
   wrongSigned: string | null
   /** Letter that was expected during a wrong-letter flash, else null. */
   wrongExpected: string | null
+
+  /**
+   * DEMO ONLY. Label of the pose being INJECTED this frame, never a
+   * classification result.
+   *
+   * Null on every normal run, which is the entire point — SignBridge populates
+   * it only while `demoPoseAsset` is wired, so this cannot reach the shipped
+   * experience. When set it takes over the status line and is rendered as
+   * "DEMO POSE: X", deliberately worded so a viewer reads it as the input being
+   * fed in rather than as something the Lens recognized. The classifier's own
+   * reading of these poses is a low-confidence U, and a shot that let that sit
+   * next to a "K" would imply a recognition the Lens is not making.
+   */
+  demoLabel?: string | null
 }
 
 /**
@@ -143,6 +158,12 @@ export function updateSignPanels(panels: (SignPanel | null | undefined)[], view:
 }
 
 /** vec4 colour to the `#rrggbb` form rich-text markup expects. */
+/** Componentwise blend, for the confidence bar's neutral -> warm ramp. */
+function mixColor(a: vec4, b: vec4, t: number): vec4 {
+  const k = clamp01(t)
+  return new vec4(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k, a.w + (b.w - a.w) * k)
+}
+
 function toHex(c: vec4): string {
   const ch = (v: number) => {
     let n = Math.round(clamp01(v) * 255)
@@ -205,8 +226,35 @@ export class SignPanel extends BaseScriptComponent {
 
   @input
   @widget(new SliderWidget(0.4, 2.5, 0.1))
-  @hint("Height of the confidence bar.")
-  barHeight: number = 1.2
+  @hint("Height of the confidence bar. Corner radius follows it, so the bar is always a pill.")
+  barHeight: number = 1.8
+
+  @input
+  @widget(new SliderWidget(0.3, 1, 0.05))
+  @hint("Bar width as a fraction of the panel's inner width. Below 1 keeps the bar inside the text column instead of running edge to edge.")
+  barWidthFraction: number = 0.72
+  @ui.group_end
+
+  @ui.group_start("Confidence bar colour")
+  @input
+  @widget(new ColorWidget())
+  @hint("Fill colour while progress is low. Matches HandVisualizer's neutral, so the bar and the hand agree.")
+  barNeutralColor: vec4 = new vec4(0.36, 0.58, 0.88, 1)
+
+  @input
+  @widget(new ColorWidget())
+  @hint("Fill colour as progress approaches a commit. Matches HandVisualizer's warming amber.")
+  barWarmColor: vec4 = new vec4(1, 0.72, 0.18, 1)
+
+  @input
+  @widget(new ColorWidget())
+  @hint("Fill colour on the commit frame, when progress reaches 1.")
+  barConfirmColor: vec4 = new vec4(0.24, 0.94, 0.46, 1)
+
+  @input
+  @widget(new ColorWidget())
+  @hint("Unfilled track. Needs enough alpha to read as an empty bar rather than as nothing.")
+  barTrackColor: vec4 = new vec4(1, 1, 1, 0.16)
   @ui.group_end
   @ui.group_start("Labels")
   @input
@@ -263,6 +311,11 @@ export class SignPanel extends BaseScriptComponent {
   private barTrack!: BackPlate
   private barFill!: BackPlate
   private barFillObject!: SceneObject
+  // BackPlate keeps its RoundedRectangle private and exposes only `style`,
+  // which has no tint. The RoundedRectangle sits on the same SceneObject, so
+  // fetch it directly — that is what actually carries backgroundColor.
+  private barTrackRect: RoundedRectangle | null = null
+  private barFillRect: RoundedRectangle | null = null
 
   // --- render state -------------------------------------------------------
   private phrase = ""
@@ -337,12 +390,15 @@ export class SignPanel extends BaseScriptComponent {
     // Confidence bar. Track and fill are plain children of the item, not laid
     // out, so their local positions are ours to control.
     if (this.showConfidenceBar) {
+      const barWidth = inner * clamp01(this.barWidthFraction)
+      const radius = this.barHeight / 2
       this.flexChild(content, {w: inner, h: this.barHeight}, child => {
         const trackObject = this.obj(child, "BarTrack")
         this.barTrack = trackObject.createComponent(BackPlate.getTypeName()) as BackPlate
         this.barTrack.onInitialized.add(() => {
           this.barTrack.style = "dark"
-          this.barTrack.size = new vec2(inner, this.barHeight)
+          this.barTrack.size = new vec2(barWidth, this.barHeight)
+          this.barTrackRect = this.styleRect(trackObject, radius, this.barTrackColor)
         })
 
         // Created after the track, so the DFS paints the fill over it.
@@ -350,6 +406,7 @@ export class SignPanel extends BaseScriptComponent {
         this.barFill = this.barFillObject.createComponent(BackPlate.getTypeName()) as BackPlate
         this.barFill.onInitialized.add(() => {
           this.barFill.style = "default"
+          this.barFillRect = this.styleRect(this.barFillObject, radius, this.barNeutralColor)
           this.setProgress(0, null)
         })
       })
@@ -384,6 +441,16 @@ export class SignPanel extends BaseScriptComponent {
     // After the wrong-letter branch: setProgress leaves the status line alone
     // while a flash owns it.
     this.setProgress(view.progress, view.candidate)
+
+    // Demo override, last so it wins the status line outright. In demo mode the
+    // line's job is to name the INPUT, and a flash or a candidate readout
+    // sharing it would reintroduce exactly the ambiguity the label exists to
+    // remove. Panels with showStatusLine off — the outward one — have no
+    // statusText and are untouched.
+    if (view.demoLabel !== undefined && view.demoLabel !== null && this.statusText) {
+      this.statusText.text = "DEMO POSE: " + view.demoLabel
+      this.statusText.textFill.color = this.captionColor
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -427,8 +494,12 @@ export class SignPanel extends BaseScriptComponent {
     }
 
     const inner = this.panelWidth - this.padding * 2
+    const barWidth = inner * clamp01(this.barWidthFraction)
     const p = clamp01(progress)
-    const width = inner * p
+    // Never let the fill shrink below its own corner radius: a pill narrower
+    // than its diameter renders as a wedge, which reads as a glitch at the
+    // very start of every hold.
+    const width = Math.max(barWidth * p, p > 0 ? this.barHeight : 0)
 
     if (width < MIN_VISIBLE_FILL_CM) {
       this.barFillObject.enabled = false
@@ -437,7 +508,14 @@ export class SignPanel extends BaseScriptComponent {
       this.barFill.size = new vec2(width, this.barHeight)
       // Grow from the left edge: a BackPlate is centred on its object, so the
       // object slides left by half the width it is missing.
-      this.barFillObject.getTransform().setLocalPosition(new vec3(-(inner - width) / 2, 0, BAR_FILL_Z))
+      this.barFillObject.getTransform().setLocalPosition(new vec3(-(barWidth - width) / 2, 0, BAR_FILL_Z))
+    }
+
+    // Colour carries the same three states as the hand skeleton, so the two
+    // surfaces never disagree about what the hold buffer is doing.
+    if (this.barFillRect !== null) {
+      this.barFillRect.backgroundColor =
+        p >= 0.999 ? this.barConfirmColor : mixColor(this.barNeutralColor, this.barWarmColor, p)
     }
 
     // Only narrate the candidate when no wrong-letter flash owns the line.
@@ -530,6 +608,27 @@ export class SignPanel extends BaseScriptComponent {
   // -------------------------------------------------------------------------
   // Composition helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Reach past BackPlate to the RoundedRectangle it builds, and make it a
+   * tintable pill.
+   *
+   * BackPlate exposes only `style` ("default" | "dark" | "simple"), which has
+   * no tint, and keeps its RoundedRectangle private — but the component sits on
+   * the same SceneObject, so it can be fetched. Gradient is disabled because
+   * `backgroundColor` is only honoured for a solid fill; leaving the style's
+   * gradient on would silently ignore every colour set here.
+   */
+  private styleRect(host: SceneObject, cornerRadius: number, color: vec4): RoundedRectangle | null {
+    const rect = host.getComponent(RoundedRectangle.getTypeName()) as RoundedRectangle | null
+    if (rect === null || rect === undefined) {
+      return null
+    }
+    rect.gradient = false
+    rect.cornerRadius = cornerRadius
+    rect.backgroundColor = color
+    return rect
+  }
 
   private obj(parent: SceneObject, name: string, position?: vec3): SceneObject {
     const sceneObject = global.scene.createSceneObject(name)

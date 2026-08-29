@@ -29,7 +29,12 @@
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     assembledColor: false
+    barConfirmColor: false
     barHeight: false
+    barNeutralColor: false
+    barTrackColor: false
+    barWarmColor: false
+    barWidthFraction: false
     captionColor: false
     currentColor: false
     doneColor: false
@@ -66,6 +71,11 @@
       rowGap: 1.600000
       padding: 2.200000
       barHeight: 1.200000
+      barWidthFraction: 0.720000
+      barNeutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      barWarmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      barConfirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      barTrackColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.160000}
       headerLabel: SIGNING
       emptyPlaceholder: —
       doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
@@ -95,7 +105,14 @@
     - '// @input float panelWidth = 42 {"hint":"Panel width in centimetres at the 110 cm focal plane.", "widget":"slider", "min":20, "max":60, "step":1}'
     - '// @input float rowGap = 1.6 {"hint":"Vertical gap between the word, the assembled text, the bar and the status line.", "widget":"slider", "min":0.5, "max":4, "step":0.1}'
     - '// @input float padding = 2.2 {"hint":"Inner padding on all four sides.", "widget":"slider", "min":1, "max":5, "step":0.1}'
-    - '// @input float barHeight = 1.2 {"hint":"Height of the confidence bar.", "widget":"slider", "min":0.4, "max":2.5, "step":0.1}'
+    - '// @input float barHeight = 1.8 {"hint":"Height of the confidence bar. Corner radius follows it, so the bar is always a pill.", "widget":"slider", "min":0.4, "max":2.5, "step":0.1}'
+    - "// @input float barWidthFraction = 0.72 {\"hint\":\"Bar width as a fraction of the panel's inner width. Below 1 keeps the bar inside the text column instead of running edge to edge.\", \"widget\":\"slider\", \"min\":0.3, \"max\":1, \"step\":0.05}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Confidence bar colour"}'
+    - "// @input vec4 barNeutralColor = {0.36,0.58,0.88,1} {\"hint\":\"Fill colour while progress is low. Matches HandVisualizer's neutral, so the bar and the hand agree.\", \"widget\":\"color\"}"
+    - "// @input vec4 barWarmColor = {1,0.72,0.18,1} {\"hint\":\"Fill colour as progress approaches a commit. Matches HandVisualizer's warming amber.\", \"widget\":\"color\"}"
+    - '// @input vec4 barConfirmColor = {0.24,0.94,0.46,1} {"hint":"Fill colour on the commit frame, when progress reaches 1.", "widget":"color"}'
+    - '// @input vec4 barTrackColor = {1,1,1,0.16} {"hint":"Unfilled track. Needs enough alpha to read as an empty bar rather than as nothing.", "widget":"color"}'
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"group_start", "label":"Labels"}'
     - '// @input string headerLabel = "SIGNING" {"hint":"Small caption above the target word. Empty string hides it."}'
