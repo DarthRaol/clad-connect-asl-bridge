@@ -336,6 +336,9 @@ export class SignPanel extends BaseScriptComponent {
 
     // BackPlate FIRST so the DFS paints it behind everything that follows.
     this.backPlate = this.sceneObject.createComponent(BackPlate.getTypeName()) as BackPlate
+    this.backPlate.onInitialized.add(() => {
+      this.makeNonInteractive(this.backPlate, this.sceneObject)
+    })
 
     // Content AFTER the plate so the DFS paints it on top. The +0.6 Z is a
     // depth-buffer tie-breaker against the plate's ~1 cm thickness.
@@ -399,6 +402,7 @@ export class SignPanel extends BaseScriptComponent {
           this.barTrack.style = "dark"
           this.barTrack.size = new vec2(barWidth, this.barHeight)
           this.barTrackRect = this.styleRect(trackObject, radius, this.barTrackColor)
+          this.makeNonInteractive(this.barTrack, trackObject)
         })
 
         // Created after the track, so the DFS paints the fill over it.
@@ -407,6 +411,7 @@ export class SignPanel extends BaseScriptComponent {
         this.barFill.onInitialized.add(() => {
           this.barFill.style = "default"
           this.barFillRect = this.styleRect(this.barFillObject, radius, this.barNeutralColor)
+          this.makeNonInteractive(this.barFill, this.barFillObject)
           this.setProgress(0, null)
         })
       })
@@ -619,6 +624,42 @@ export class SignPanel extends BaseScriptComponent {
    * `backgroundColor` is only honoured for a solid fill; leaving the style's
    * gradient on would silently ignore every colour set here.
    */
+  /**
+   * Strip interactivity from a BackPlate.
+   *
+   * BackPlate.initialize() unconditionally creates a ColliderComponent, an
+   * Interactable and an InteractionPlane on its SceneObject — reasonable for a
+   * button, wrong for a readout. Nothing on either SignPanel is interactive:
+   * this Lens has no buttons, sliders or draggables at all. Left in place they
+   * make every plate a hover target, so an interactor cursor lands on the
+   * confidence bar and on the panel background.
+   *
+   * Safe to disable: BackPlate registers no hover or trigger handlers, and its
+   * visual path (RoundedRectangle initialize / blendMode / gradient / size) does
+   * not read interaction state. BackPlate itself already supports the plane
+   * being off — initialize() sets `_interactionPlane.enabled` from its own
+   * `_enableInteractionPlane` input — so this is a supported configuration
+   * rather than a component being sabotaged.
+   *
+   * The collider matters as much as the Interactable: it is the raycast target,
+   * so leaving it enabled would keep the plate hittable even with interaction
+   * off.
+   */
+  private makeNonInteractive(plate: BackPlate, host: SceneObject): void {
+    const interactable = plate.interactable
+    if (interactable) {
+      interactable.enabled = false
+    }
+    const plane = plate.interactionPlane
+    if (plane) {
+      plane.enabled = false
+    }
+    const collider = host.getComponent("ColliderComponent")
+    if (collider) {
+      collider.enabled = false
+    }
+  }
+
   private styleRect(host: SceneObject, cornerRadius: number, color: vec4): RoundedRectangle | null {
     const rect = host.getComponent(RoundedRectangle.getTypeName()) as RoundedRectangle | null
     if (rect === null || rect === undefined) {
