@@ -28,13 +28,18 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    autoAdvanceSeconds: false
+    autoAdvanceTailGap: false
     featureMode: false
+    handVisualizer: false
     inwardPanel: false
     k: false
+    letterCommitAudio: false
     maxDistance: false
     minMeanConfidence: false
     mockHandInput: false
     outwardPanel: false
+    phraseCompleteAudio: false
     rearmFrames: false
     signingHand: false
     templatesAsset: false
@@ -54,6 +59,11 @@
       inwardPanel: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
       outwardPanel: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
       mockHandInput: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+      handVisualizer: !<MappingBased.AssignableType_4> 00000000-0000-0000-0000-000000000000
+      letterCommitAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      phraseCompleteAudio: !<reference.AudioComponent> 00000000-0000-0000-0000-000000000000
+      autoAdvanceSeconds: !<float> 0.000000
+      autoAdvanceTailGap: 0.250000
       featureMode: full
       k: !<float> 1.000000
       thumbWeight: !<float> 1.000000
@@ -74,6 +84,13 @@
     - '// @input AssignableType_1 inwardPanel {"hint":"Signer-facing panel: target word, confidence bar, wrong-letter flash."}'
     - '// @input AssignableType_2 outwardPanel {"hint":"Reader-facing panel: the assembled text."}'
     - '// @input AssignableType_3 mockHandInput {"hint":"Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware."}'
+    - '// @input AssignableType_4 handVisualizer {"hint":"Optional. Draws the exact feature vector the classifier scores, as a hand between the panels."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Audio"}'
+    - '// @input Component.AudioComponent letterCommitAudio {"hint":"Short chime on each committed letter. Set to LowLatency at start so it lands on the commit frame."}'
+    - '// @input Component.AudioComponent phraseCompleteAudio {"hint":"Played once when a phrase completes. Its duration sets the floor for autoAdvanceSeconds."}'
+    - "// @input float autoAdvanceSeconds {\"hint\":\"Seconds to wait after completing a phrase before seating the next. 0 disables auto-advance. If below the completion sound's length it is raised, so the next phrase never starts under the tail.\", \"widget\":\"slider\", \"min\":0, \"max\":10, \"step\":0.25}"
+    - '// @input float autoAdvanceTailGap = 0.25 {"hint":"Extra silence between the completion sound ending and the next phrase appearing.", "widget":"slider", "min":0, "max":2, "step":0.05}'
     - '// @ui {"widget":"group_end"}'
     - '// @ui {"widget":"group_start", "label":"Classifier"}'
     - "// @input string featureMode = \"full\" {\"hint\":\"Feature space distances are computed in. 'full' = 78 dims, 'reduced' = 57.\", \"widget\":\"combobox\", \"values\":[{\"label\":\"full\", \"value\":\"full\"}, {\"label\":\"reduced\", \"value\":\"reduced\"}]}"

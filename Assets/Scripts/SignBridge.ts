@@ -30,6 +30,7 @@ import {
   MockHandInput,
   MockPoseStep
 } from "./MockHandInput"
+import {HandVisualizer} from "./HandVisualizer"
 import {PhraseController} from "./PhraseController"
 import {SignPanel, SignPanelView, updateSignPanels} from "./SignPanel"
 import {extractNormalized, TemplatesFile} from "./TemplateFormat"
@@ -69,7 +70,35 @@ export class SignBridge extends BaseScriptComponent {
   @allowUndefined
   @hint("Optional. When present, it is loaded with the template poses and replays them — Editor testing without hardware.")
   mockHandInput: MockHandInput
+
+  @input
+  @allowUndefined
+  @hint("Optional. Draws the exact feature vector the classifier scores, as a hand between the panels.")
+  handVisualizer: HandVisualizer
   @ui.group_end
+
+  @ui.group_start("Audio")
+  @input
+  @allowUndefined
+  @hint("Short chime on each committed letter. Set to LowLatency at start so it lands on the commit frame.")
+  letterCommitAudio: AudioComponent
+
+  @input
+  @allowUndefined
+  @hint("Played once when a phrase completes. Its duration sets the floor for autoAdvanceSeconds.")
+  phraseCompleteAudio: AudioComponent
+
+  @input
+  @hint("Seconds to wait after completing a phrase before seating the next. 0 disables auto-advance. If below the completion sound's length it is raised, so the next phrase never starts under the tail.")
+  @widget(new SliderWidget(0, 10, 0.25))
+  autoAdvanceSeconds: number = 0
+
+  @input
+  @hint("Extra silence between the completion sound ending and the next phrase appearing.")
+  @widget(new SliderWidget(0, 2, 0.05))
+  autoAdvanceTailGap: number = 0.25
+  @ui.group_end
+
   @ui.group_start("Classifier")
   @input
   @widget(new ComboBoxWidget([new ComboBoxItem("full"), new ComboBoxItem("reduced")]))
@@ -154,8 +183,18 @@ export class SignBridge extends BaseScriptComponent {
 
     this.phrases = new PhraseController()
 
+    // Handles are acquired in onAwake; every .add() subscription belongs in
+    // OnStartEvent. playbackMode is a plain property, so it is set here.
+    if (this.letterCommitAudio) {
+      // Defaults to LowPower, which trades latency for battery. The letter
+      // chime is commit feedback and has to land on the frame the commit
+      // happened, so it takes the latency-optimized path instead.
+      this.letterCommitAudio.playbackMode = Audio.PlaybackMode.LowLatency
+    }
+
     this.createEvent("OnStartEvent").bind(() => {
       this.loadTemplates()
+      this.configureAudio()
       this.logConfiguration()
     })
 
@@ -167,6 +206,45 @@ export class SignBridge extends BaseScriptComponent {
   // -------------------------------------------------------------------------
   // Setup
   // -------------------------------------------------------------------------
+
+  /**
+   * Subscribe the completion sound and reconcile auto-advance against its
+   * length.
+   *
+   * The failure this guards against: autoAdvanceSeconds shorter than the
+   * completion sound means the next phrase is seated — panels repainted, target
+   * word swapped — while the previous phrase's sound is still playing, so the
+   * audio reads as feedback about the NEW phrase. The floor is the measured
+   * duration of whatever track is actually wired, not a constant, so replacing
+   * the asset with a longer one cannot silently reintroduce the overlap.
+   */
+  private configureAudio(): void {
+    if (this.phraseCompleteAudio) {
+      this.phrases.onPhraseComplete.add(() => {
+        this.phraseCompleteAudio.play(1)
+      })
+    }
+
+    let advance = this.autoAdvanceSeconds > 0 ? this.autoAdvanceSeconds : 0
+    if (advance > 0 && this.phraseCompleteAudio) {
+      const floor = this.phraseCompleteAudio.duration + this.autoAdvanceTailGap
+      if (advance < floor) {
+        print(
+          "SignBridge: autoAdvanceSeconds " +
+            advance.toFixed(2) +
+            "s is shorter than the completion sound (" +
+            this.phraseCompleteAudio.duration.toFixed(2) +
+            "s + " +
+            this.autoAdvanceTailGap.toFixed(2) +
+            "s gap). Raised to " +
+            floor.toFixed(2) +
+            "s so the next phrase does not start under the tail."
+        )
+        advance = floor
+      }
+    }
+    this.phrases.setAutoAdvanceSeconds(advance)
+  }
 
   private loadTemplates(): void {
     if (!this.templatesAsset) {
@@ -236,7 +314,8 @@ export class SignBridge extends BaseScriptComponent {
   private onUpdate(): void {
     // Timed transitions run even before templates load, so a misconfigured
     // session still shows a stable panel instead of a frozen one.
-    this.phrases.update(getDeltaTime())
+    const dt = getDeltaTime()
+    this.phrases.update(dt)
 
     if (this.ready) {
       // Resolved per frame rather than cached: MockHandInput registers itself
@@ -248,10 +327,29 @@ export class SignBridge extends BaseScriptComponent {
       const active = getActiveHandFeatureSource()
       const source: HandFeatureSource = active !== null ? active : this.liveSource
 
-      const result = this.classifier.classifyFrom(source)
+      // Read the features ONCE and fan them out. classifyFrom() would call
+      // source.getFeatures() internally; pulling that call up to here means the
+      // visualizer draws the identical array the classifier scored, rather than
+      // a second read that could drift from it. This is the only reason the
+      // drawn hand can be trusted as evidence of what the classifier saw.
+      const features = source.getFeatures()
+      const result = features !== null ? this.classifier.classify(features) : null
       const committed = this.holdBuffer.push(result)
 
+      if (this.handVisualizer) {
+        // After push(), so the colour and the confidence bar read the same
+        // post-commit state instead of disagreeing by one frame.
+        this.handVisualizer.render(features, this.holdBuffer.getState(), committed, dt)
+      }
+
       if (committed !== null) {
+        // Fired from the commit EVENT, not from watching committed-letter state
+        // change — same rule as the HandVisualizer pulse. Signing the same
+        // letter twice in a row is two events and must be two chimes, and a
+        // state-change check would swallow the second.
+        if (this.letterCommitAudio) {
+          this.letterCommitAudio.play(1)
+        }
         const outcome = this.phrases.submit(committed)
         if (this.verbose) {
           const state = this.phrases.getState()

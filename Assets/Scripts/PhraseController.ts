@@ -257,6 +257,19 @@ export class PhraseController {
   }
 
   /** Replace the preset menu and seat its first entry. */
+  /**
+   * Change the delay between completing a phrase and seating the next one.
+   * Zero disables auto-advance entirely.
+   *
+   * Exposed as a setter, not just a constructor option, because the caller that
+   * knows the right value is the one holding the completion SFX — it cannot
+   * know the audio's duration until the track has loaded, which is after this
+   * controller is constructed.
+   */
+  setAutoAdvanceSeconds(seconds: number): void {
+    this.autoAdvanceSeconds = seconds > 0 ? seconds : 0
+  }
+
   setPhrases(phrases: string[]): void {
     if (!phrases || phrases.length === 0) {
       throw new Error("PhraseController.setPhrases: need at least one phrase.")

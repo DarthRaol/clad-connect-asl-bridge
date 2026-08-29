@@ -1,0 +1,92 @@
+- !<AssetImportMetadata/e432aa9e-6e95-412a-a818-95b1e80befac>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 1866c4e8-07a4-4f58-a81a-3fd5ec6fb074
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 1866c4e8-07a4-4f58-a81a-3fd5ec6fb074
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 7fabb731-996b-4b5e-95da-04dcfa3e4d38
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/7fabb731-996b-4b5e-95da-04dcfa3e4d38>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  UpdateOrder: 0
+  ComponentUid: 68dd9f8c-d486-434d-93d3-d40df63cf65c
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    boneDimming: false
+    boneMaterial: false
+    boneThickness: false
+    confirmColor: false
+    confirmSeconds: false
+    handScale: false
+    hideWhenUntracked: false
+    jointMaterial: false
+    jointRadius: false
+    neutralColor: false
+    offset: false
+    rotationDegrees: false
+    warmColor: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - jointMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      boneMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      handScale: 5.500000
+      offset: !<Vec3> {x: 0.000000, y: 0.000000, z: 2.000000}
+      rotationDegrees: !<Vec3> {x: 0.000000, y: 180.000000, z: 0.000000}
+      jointRadius: 0.420000
+      boneThickness: 0.260000
+      neutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      warmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      confirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      confirmSeconds: 0.450000
+      boneDimming: 0.550000
+      hideWhenUntracked: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<b>Hand Visualizer</b> — draws the exact vector the classifier sees"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Materials"}'
+    - '// @input Asset.Material jointMaterial {"hint":"Unlit material for the joint spheres. Tinted at runtime by hold state — give it its own asset, not one shared with the panels."}'
+    - '// @input Asset.Material boneMaterial {"hint":"Unlit material for the bones. A second asset, so bones can sit dimmer than joints."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Layout"}'
+    - '// @input float handScale = 5.5 {"hint":"Centimetres per unit of normalized hand space. One unit is wrist->middleKnuckle, so the drawn hand is roughly 2x this tall.", "widget":"slider", "min":1, "max":20, "step":0.5}'
+    - '// @input vec3 offset = {0,0,2} {"hint":"Offset of the rig from this object, in centimetres. The default seats it in the gap between the two panels."}'
+    - '// @input vec3 rotationDegrees = {0,180,0} {"hint":"Rig rotation in degrees. The normalized frame has +Z as the palm normal; the default turns the palm toward the wearer."}'
+    - '// @input float jointRadius = 0.42 {"hint":"Radius of a joint sphere, in centimetres.", "widget":"slider", "min":0.05, "max":1.5, "step":0.05}'
+    - '// @input float boneThickness = 0.26 {"hint":"Thickness of a bone, in centimetres.", "widget":"slider", "min":0.05, "max":1.5, "step":0.05}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Colour"}'
+    - '// @input vec4 neutralColor = {0.36,0.58,0.88,1} {"hint":"Searching: a hand is tracked but nothing is accumulating.", "widget":"color"}'
+    - '// @input vec4 warmColor = {1,0.72,0.18,1} {"hint":"Fully warmed: HoldBuffer progress at 1, a commit about to fire.", "widget":"color"}'
+    - '// @input vec4 confirmColor = {0.24,0.94,0.46,1} {"hint":"Committed: pulsed on the frame a letter commits.", "widget":"color"}'
+    - '// @input float confirmSeconds = 0.45 {"hint":"How long the commit pulse holds before falling back to neutral.", "widget":"slider", "min":0.05, "max":2, "step":0.05}'
+    - '// @input float boneDimming = 0.55 {"hint":"Bone brightness relative to the joints. Below 1 makes the joints read as knuckles.", "widget":"slider", "min":0.2, "max":1, "step":0.05}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Behaviour"}'
+    - '// @input bool hideWhenUntracked = true {"hint":"Hide the rig on untracked frames. On means the gaps in the input are visible as gaps — recommended, since the point is to show the real input."}'
+    - '// @ui {"widget":"group_end"}'
