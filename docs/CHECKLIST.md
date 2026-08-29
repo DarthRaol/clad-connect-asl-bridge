@@ -12,7 +12,7 @@ Legend: `[x]` done · `[ ]` todo · **You** / **CLAD** = who does it · ⏱ = ro
 
 ## Phase 1 — Setup ✅ 6/6
 
-- [x] Lens Studio 5.23.1, CLAD setup, MCP live
+- [x] Lens Studio **5.23.2** (read from `Lens Studio.exe` ProductVersion), CLAD setup, MCP live
 - [x] `ls-clad` plugin (59 skills, current at `cfeb679`)
 - [x] Git repo + GitHub remote, pushed
 - [x] SpectaclesInteractionKit · SpectaclesUIKit · LEAF installed
@@ -40,7 +40,10 @@ Legend: `[x]` done · `[ ]` todo · **You** / **CLAD** = who does it · ⏱ = ro
 - [x] `SignPanel.ts` ×2 — outward (assembled text) + inward (target word, bar, flash)
 - [x] `SignBridge.ts` — the driver; full chain running in preview
 - [x] 5 LEAF scenarios, all passing, **mutation-verified**
-- [x] `templates.synthetic.json` — 7 letters, flagged synthetic
+- [x] `templates.synthetic.json` — **6 letters** (L U K E C O), flagged synthetic.
+      P dropped as K's orientation-collision partner.
+- [x] `HandVisualizer.ts` — 26 joints + 25 bones rendered from the feature vector itself
+- [x] Commit + phrase-complete SFX, wired with a duration-derived tail guard
 
 ---
 
