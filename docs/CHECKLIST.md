@@ -1,10 +1,17 @@
 # ASL Bridge — Task Checklist
 
 **Deadline: Sun Aug 30, 11:59 PM PT** = **Mon Aug 31, ~12:30 PM IST** (local).
-Now: **Sat Aug 29.** Roughly **56 hours left** for about **3 hours of work.**
+Now: **Sat Aug 29, evening.** Roughly **40 hours left** for about **1.5 hours of work.**
 
-**Phases 1–3 complete.** Phase 4 (hardware) is dead — no device materialized, so we ship with
-synthetic templates, honestly labelled. **Everything left is Phase 5.**
+**Phases 1–3 complete.** Phase 4 (hardware) is dead — no device materialized (confirmed: no
+access at all), so we ship with synthetic templates, honestly labelled.
+
+**Phase 5 status: 5A, 5B, 5C done.** README, SEPARABILITY, VIDEO_SHOTLIST and
+PROMPT_LOG_HEADER written; repo public and renamed to `clad-connect-asl-bridge`; hero capture
+retaken on Evening Room with both hands.
+
+**Remaining: film (5D) → export + narrative (5E) → submit (5F).**
+Video is capped at **60 seconds**, cut from 88 — shot 4 (wrong letter) dropped.
 
 Legend: `[x]` done · `[ ]` todo · **You** / **CLAD** = who does it · ⏱ = rough time
 
@@ -39,7 +46,7 @@ Legend: `[x]` done · `[ ]` todo · **You** / **CLAD** = who does it · ⏱ = ro
 - [x] `PhraseController.ts` — state machine, wrong-letter flash, J/Z guard, tiered phrase list
 - [x] `SignPanel.ts` ×2 — outward (assembled text) + inward (target word, bar, flash)
 - [x] `SignBridge.ts` — the driver; full chain running in preview
-- [x] 5 LEAF scenarios, all passing, **mutation-verified**
+- [x] 6 LEAF scenarios, all passing, **mutation-verified**
 - [x] `templates.synthetic.json` — **6 letters** (L U K E C O), flagged synthetic.
       P dropped as K's orientation-collision partner.
 - [x] `HandVisualizer.ts` — 26 joints + 25 bones rendered from the feature vector itself
@@ -72,7 +79,7 @@ is unverified.
   - [ ] **Framing** — practice/fallback aid, not a replacement for interpreters; does not
         translate ASL, reads fingerspelling only
   - [ ] Embed `docs/end-to-end-preview.png`
-  - [ ] Note 5 LEAF scenarios + the mutation verification
+  - [ ] Note 6 LEAF scenarios + the mutation verification
 - [ ] **CLAD** — `docs/TESTER_GUIDE.md` ⏱ 15 min — *optional now that Phase 4 is dead.
       Write it only if it costs nothing; it's evidence of planning, not a deliverable.*
 
@@ -113,6 +120,11 @@ is unverified.
 - [ ] **You** — **Hand-write the ~10-line narrative header.** Judges read this before the
       transcript. Lead with the mutation test.
 - [ ] **You** — Re-copy the final transcript → `docs/session-raw.jsonl` (base64 already stripped)
+- [ ] **You/CLAD** — **Reset all five filming aids** before the last commit:
+      `SignBridge.demoPoseAsset` unwired · `startDelaySeconds` **0** · `loopDemo` **false** ·
+      `showReferenceHand` **ON** · `MockHandInput.interpolateFrames` **0**.
+      All five are recording conveniences; shipping any of them set changes first-run
+      behaviour, and three of them make the LEAF suite fail. See `docs/VIDEO_SHOTLIST.md`.
 - [ ] **You** — Commit and push
 
 ### 5F · Submit ⏱ ~15 min

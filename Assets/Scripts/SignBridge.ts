@@ -160,6 +160,23 @@ export class SignBridge extends BaseScriptComponent {
   @hint("Log a line on every commit, wrong letter and phrase completion.")
   verbose: boolean = true
   @ui.group_end
+
+  @ui.group_start("Filming aids")
+  @ui.label("Recording conveniences, NOT product behaviour. Both default to shipped behaviour; set them back to 0 / off before committing.")
+  @input
+  @hint("Hold the mock idle for this long after load, so recording can start before anything happens. 0 = shipped behaviour: the mock plays immediately.")
+  @widget(new SliderWidget(0, 15, 0.5))
+  startDelaySeconds: number = 0
+
+  @input
+  @hint("Restart the phrase and the mock sequence after completion so a take can loop. Off = shipped behaviour: the demo stops on the finished word.")
+  loopDemo: boolean = false
+
+  @input
+  @hint("Pause between loop cycles. Long enough that the completion chime finishes and the finished word is readable before the reset.")
+  @widget(new SliderWidget(0.5, 8, 0.25))
+  loopPauseSeconds: number = 2.5
+  @ui.group_end
   private handProvider = HandInputData.getInstance()
   private hand!: BaseHand
   private liveSource!: HandFeatureSource
@@ -179,6 +196,13 @@ export class SignBridge extends BaseScriptComponent {
   private referenceLetter: string | null = null
   private referencePose: number[] | null = null
   private referenceScale = 1
+
+  // Filming-aid state. All inert while startDelaySeconds is 0 and loopDemo is
+  // off, which is the shipped configuration.
+  private sinceReady = 0
+  private started = false
+  private loopPending = false
+  private loopTimer = 0
 
   onAwake() {
     // getHand belongs in onAwake. Nothing here subscribes to a SIK event, so
@@ -420,6 +444,11 @@ export class SignBridge extends BaseScriptComponent {
         }
       }
       this.mockHandInput.loadFromTemplates(poses, {framesPerPose: 30, gapFrames: 12})
+      if (this.startDelaySeconds > 0) {
+        // loadFromTemplates -> setSequence -> reset() leaves the mock playing,
+        // so the hold has to be applied after it, not before.
+        this.mockHandInput.pause()
+      }
       if (source !== "templates") {
         const shown = letterKeys(poses).join(",")
         print(
@@ -451,6 +480,43 @@ export class SignBridge extends BaseScriptComponent {
     this.phrases.update(dt)
 
     if (this.ready) {
+      // ---- filming aids -------------------------------------------------
+      // Both branches below are no-ops in the shipped configuration
+      // (startDelaySeconds 0, loopDemo off): `started` flips true on the first
+      // frame and `loopPending` never arms.
+      this.sinceReady += dt
+
+      if (!this.started && (this.startDelaySeconds <= 0 || this.sinceReady >= this.startDelaySeconds)) {
+        this.started = true
+        if (this.mockHandInput) {
+          // reset() rewinds to step 0 AND sets playing = true, so the sequence
+          // begins from its first pose the moment the hold expires rather than
+          // resuming wherever it was paused.
+          this.mockHandInput.reset()
+        }
+      }
+
+      if (this.loopPending) {
+        this.loopTimer -= dt
+        if (this.loopTimer <= 0) {
+          this.beginLoopCycle()
+        }
+      }
+
+      // Idle means "produce no input this frame". The pipeline is fed an
+      // untracked frame rather than skipped, so HoldBuffer stays reset and the
+      // hands hide — a clean, still start rather than a frozen pose that would
+      // keep filling the window and commit on its own.
+      if (!this.started || this.loopPending) {
+        this.holdBuffer.push(null)
+        if (this.handVisualizer) {
+          this.handVisualizer.render(null, this.holdBuffer.getState(), null, dt)
+        }
+        this.updateReferenceHand(null)
+        updateSignPanels([this.inwardPanel, this.outwardPanel], this.buildView())
+        return
+      }
+
       // Resolved per frame rather than cached: MockHandInput registers itself
       // during ITS OnStartEvent, and script start order follows scene hierarchy
       // order, which this script must not depend on. Reading the module-level
@@ -498,6 +564,18 @@ export class SignBridge extends BaseScriptComponent {
       // target must move the reference hand in the same frame the letter turns
       // green, or the signer is shown the letter they just finished.
       this.updateReferenceHand(features)
+
+      // Arm the loop on the frame the phrase completes. The mock is paused
+      // rather than left running, so the finished word sits still and the
+      // completion chime lands over a static frame instead of over the next
+      // letter's pose.
+      if (this.loopDemo && !this.loopPending && this.phrases.getState().status === "complete") {
+        this.loopPending = true
+        this.loopTimer = this.loopPauseSeconds
+        if (this.mockHandInput) {
+          this.mockHandInput.pause()
+        }
+      }
     }
 
     updateSignPanels([this.inwardPanel, this.outwardPanel], this.buildView())
@@ -760,5 +838,34 @@ export class SignBridge extends BaseScriptComponent {
   restart(): void {
     this.phrases.restart()
     this.holdBuffer.reset()
+    // Drop the cached reference target so the pose and its distance scale are
+    // refetched. Without this, a restart back to the SAME letter the cache
+    // already holds would leave the reference hand hidden or stale.
+    this.referenceLetter = null
+    this.referencePose = null
+    // A manual restart cancels any pending loop — otherwise a scenario calling
+    // restart() mid-countdown would be reset again underneath itself.
+    this.loopPending = false
+    this.loopTimer = 0
+  }
+
+  /**
+   * Begin another cycle of a looping take.
+   *
+   * PhraseController.restart() reseats the same phrase through setPhrase(),
+   * which rebuilds letterStatus to all-pending and zeroes index, mistakes,
+   * mistakesOnCurrentLetter, skipped and wrongLetter — so the loop starts from
+   * a genuinely clean state, not a partially cleared one. restart() also clears
+   * the reference cache, which is what brings the target hand back after the
+   * completed phrase had hidden it.
+   */
+  private beginLoopCycle(): void {
+    this.restart()
+    if (this.mockHandInput) {
+      this.mockHandInput.reset()
+    }
+    if (this.verbose) {
+      print("SignBridge: loop restart — '" + this.phrases.getState().phrase + "' from the top.")
+    }
   }
 }

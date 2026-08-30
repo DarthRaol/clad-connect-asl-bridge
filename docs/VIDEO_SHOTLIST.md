@@ -31,9 +31,17 @@ Start on the wearer's side, hold ~4s on the target word, confidence bar and hand
 Preview camera positions, both verified:
 
 ```
-wearer's side   setPosition (0, -11, -42)   lookAt (0, -11, -110)
+wearer's side   setPosition (0, -15, -30)   lookAt (0, -15, -110)
 reader's side   setPosition (0,   6, -150)  lookAt (0,   8, -110)
 ```
+
+The wearer's mark was re-measured for the stacked hand layout — the old `(0, -11, -42)` was
+framed for the side-by-side hands and now crops the captions off both ends. Reference frames:
+`docs/shot1-wearer-mark.png`, `docs/shot1-reader-mark.png`.
+
+From the reader's mark the captions are invisible (Text is single-sided, same as the panel
+text) and the reference hand hangs below the word mid-phrase, then disappears when the phrase
+completes. Hold for the completed word if you want the cleanest reader frame.
 
 > "One pair of glasses, two surfaces. The signer sees their target and their progress. The person across from them sees only the finished text — and reads it right off the glasses."
 
@@ -47,18 +55,19 @@ reader's side   setPosition (0,   6, -150)  lookAt (0,   8, -110)
 
 **~10s. The most legible shot in the video — it needs no narration to be understood.**
 
-Two hands side by side in the gap between the panels:
+Two hands stacked vertically around the panel, each captioned:
 
-- **left, amber, thick bones** — the live hand, drawn from the exact vector the classifier is scoring
-- **right, cyan, thin bones** — the reference: the target letter's stored template
+- **above the panel — cyan, thin bones, "COPY THIS"** — the reference: the target letter's stored template
+- **below the panel — amber, thick bones, "YOUR HAND"** — the live hand, drawn from the exact vector the classifier is scoring
 
-A viewer understands "copy the one on the right" instantly. Let it sit in silence for a beat before saying anything.
+The captions carry the meaning on their own, so the shot survives compression, a colour-blind
+viewer, and a muted playback. Let it sit in silence for a beat before saying anything.
 
 > "The cyan hand is the letter you're being asked to make. The amber one is what the glasses are actually seeing. It brightens as the two converge."
 
 **Get right:**
 
-- **Shoot mid-word.** The reference hides itself when the phrase completes — no letter left to copy — so a completed LUKE leaves only one hand on screen.
+- **Shoot mid-word.** The reference hides itself when the phrase completes — no letter left to copy — and **"COPY THIS" hides with it**, so a completed LUKE leaves only the amber hand and its caption.
 - **The reference steps, it does not glide.** In the Editor the mock replays stored templates verbatim, so the live hand teleports between exact poses and the reference brightness jumps between levels. On hardware a real hand sweeps the intermediate distances and it ramps smoothly. Do not promise a glide the preview cannot show — sell the pairing, not the animation.
 
 **Setup:** default state (`showReferenceHand` ON). **Teardown:** none.
@@ -129,7 +138,7 @@ Every demo-mode run prints a loud reminder naming the poses and the real candida
 
 Name what the last one covers, since it is the least obvious: `alphabet-coverage` asserts a defined behaviour for **all 26 letters** — six recognized end to end, eighteen absent and refused by phrase gating, J and Z excluded as motion letters.
 
-**Setup:** default state — the coverage scenario reads the classifier's loaded letters, so a wired `demoPoseAsset` would be showing the wrong thing on screen while it ran.
+**Setup:** default state, and **all five filming aids reset** — see the section below. `startDelaySeconds`, `loopDemo` and `interpolateFrames` each break the suite on their own; the coverage scenario also reads the classifier's loaded letters, so a wired `demoPoseAsset` would be showing the wrong thing on screen while it ran.
 
 ---
 
@@ -173,10 +182,48 @@ FAILED: signbridge-alphabet-coverage
 
 - [ ] Preview device on **Evening Room**, not Sunlit Room — Specs renders additively, and two captures in this project produced phantom defects because they were under-exposed
 - [ ] `demoPoseAsset` **unwired** and `showReferenceHand` **ON** before shots 1–4 and 8
+- [ ] Filming aids **on** for the shoot: `startDelaySeconds` **3** (press record during the still frame), `loopDemo` **ON** (LUKE re-runs, so a fluffed take costs one cycle, not one reload), `interpolateFrames` **8** on MockHandInput (hands sweep between letters instead of snapping)
+- [ ] ...and all five reset to defaults again before shots 6 and 7 — the suite fails with them on
 - [ ] Terminal font size raised before shots 6 and 7
 - [ ] Audio levels checked — the commit chime is 0.09 s and easy to lose under narration
 - [ ] `templates.synthetic.json` in place (6 letters: L U K E C O), Lens running with no errors
 - [ ] One silent dry run to confirm timings before recording with narration
+
+## Before the final commit — reset all five
+
+These are filming aids, not product behaviour. Shipping with any of them set changes what a
+judge sees on first run, so revert every one before the last commit:
+
+| input | on | shipped default | set for filming |
+|---|---|---|---|
+| `demoPoseAsset` | SignBridge | **unwired** | wired (shot 5 only) |
+| `showReferenceHand` | SignBridge | **ON** | OFF (shot 5 only) |
+| `startDelaySeconds` | SignBridge | **0** | 3 |
+| `loopDemo` | SignBridge | **false** | true |
+| `interpolateFrames` | MockHandInput | **0** | 8 |
+
+## The filming aids and the LEAF suite are mutually exclusive
+
+**Shots 6 and 7 must be recorded with all five at their shipped defaults.** This is measured, not
+cautionary — each of the three timing aids breaks the suite in its own way:
+
+- **`startDelaySeconds > 0`** — SignBridge ignores driven frames during the hold, so a scenario
+  starting inside that window never sees its poses commit. Observed:
+  `FAILED: signbridge-no-spurious-double — Expected: "true" — Received: "false"`.
+- **`loopDemo` on** — restarts the phrase on completion, which can reset state under a
+  scenario still running.
+- **`interpolateFrames = 8`** — fails `signbridge-no-spurious-double` on its last assertion,
+  `Expected: "0" — Received: "1"` (`mistakes`). The scenario injects a **one-frame** glitch to
+  prove a single dropout cannot re-arm the hold buffer. Interpolation replaces that one frame
+  with eight blend frames, which clears `rearmFrames = 3`, so the still-held letter commits a
+  second time — and since the phrase has already advanced, it lands as a mistake.
+
+  That is interpolation behaving correctly, not a defect: eight intermediate poses genuinely
+  are eight non-matching frames. It just makes the scenario's one-frame premise no longer hold.
+
+The other five scenarios pass at `interpolateFrames = 8`, and commit timing is unchanged
+(`completes-word` 3.077 s → 3.188 s) — 30-frame poses minus an 8-frame blend still leave 22
+clean frames for an 18-frame window.
 
 ## Timing summary
 

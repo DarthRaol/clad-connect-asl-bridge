@@ -176,6 +176,10 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
   preserveStructuralDims: boolean = true
 
   @input
+  @hint("Blend from the last tracked pose into each new one over this many frames instead of snapping. 0 = off (shipped). Filming aid.")
+  interpolateFrames: number = 0
+
+  @input
   @allowUndefined
   @hint("Optional. Shows the current step label and frame, so preview state is visible at a glance.")
   statusText: Text
@@ -194,6 +198,14 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
   private rngState = 1
   private spareGaussian = 0
   private hasSpareGaussian = false
+
+  /**
+   * The pose the current step is sweeping away from. Holds the last *tracked*
+   * step's vector, so a gap does not clear it — a hand lowered between letters
+   * and raised again sweeps into the new shape rather than popping into it.
+   */
+  private blendFrom = new Float32Array(FEATURE_DIM)
+  private hasBlendFrom = false
 
   onAwake() {
     this.resetRandom()
@@ -375,6 +387,7 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
     this.framesIntoStep = 0
     this.finished = false
     this.playing = true
+    this.hasBlendFrom = false
     this.resetRandom()
     this.invalidateFrame()
     this.rebuildFrame()
@@ -394,6 +407,16 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
     const hold = step !== null && step.frames > 1 ? step.frames : 1
 
     if (this.framesIntoStep >= hold) {
+      // Remember the pose we are leaving so the next step can sweep out of it.
+      // Untracked (gap) steps deliberately leave this untouched: there is no
+      // hand to blend from, and the letter before the gap is the right origin.
+      if (step !== null && step.features !== null) {
+        for (let i = 0; i < FEATURE_DIM; i++) {
+          this.blendFrom[i] = step.features[i]
+        }
+        this.hasBlendFrom = true
+      }
+
       this.framesIntoStep = 0
       this.stepIndex++
       if (this.stepIndex >= this.steps.length) {
@@ -455,19 +478,30 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
     this.frameTracked = true
     const src = step.features
     const sigma = this.jitterSigma
+    const t = this.blendWeight(step)
 
-    if (sigma <= 0) {
+    if (t >= 1) {
       for (let i = 0; i < FEATURE_DIM; i++) {
         this.frameVector[i] = src[i]
       }
-      return
+    } else {
+      const from = this.blendFrom
+      for (let i = 0; i < FEATURE_DIM; i++) {
+        this.frameVector[i] = from[i] + (src[i] - from[i]) * t
+      }
     }
 
-    for (let i = 0; i < FEATURE_DIM; i++) {
-      this.frameVector[i] = src[i] + this.nextGaussian() * sigma
+    if (sigma > 0) {
+      for (let i = 0; i < FEATURE_DIM; i++) {
+        this.frameVector[i] += this.nextGaussian() * sigma
+      }
     }
 
-    if (this.preserveStructuralDims) {
+    // Pinned after both the blend and the jitter. A lerp between two on-manifold
+    // vectors already lands on (0,0,0)/(0,1,0) exactly, so this is a no-op for
+    // well-formed input — but it costs six writes and holds the invariant even
+    // if an endpoint ever drifts off the manifold.
+    if (this.preserveStructuralDims && (sigma > 0 || t < 1)) {
       // normalizeLandmarks can never emit anything but these exact values;
       // restoring them keeps mock output on the manifold real data occupies.
       for (let k = 0; k < STRUCTURAL_DIMS.length; k++) {
@@ -475,6 +509,43 @@ export class MockHandInput extends BaseScriptComponent implements HandFeatureSou
         this.frameVector[d] = src[d]
       }
     }
+  }
+
+  /**
+   * How far this frame has swept from `blendFrom` toward the step's own pose.
+   * 1 means "fully arrived", which is every frame when interpolation is off.
+   *
+   * The ramp is (n + 1) / (blend + 1), so frame 0 has already moved off the
+   * previous pose — re-emitting it would stall the sweep for a frame — and the
+   * frame right after the blend window sits exactly on the target.
+   */
+  private blendWeight(step: MockPoseStep): number {
+    const blend = this.blendLength(step)
+    if (blend <= 0 || this.framesIntoStep >= blend) {
+      return 1
+    }
+    return (this.framesIntoStep + 1) / (blend + 1)
+  }
+
+  /** Blend frames actually usable for this step, after clamping. */
+  private blendLength(step: MockPoseStep): number {
+    if (!this.hasBlendFrom) {
+      return 0
+    }
+    const requested = Math.floor(this.interpolateFrames)
+    // Written as !(x > 0), not (x <= 0), so NaN takes this branch. A scene whose
+    // component predates this input supplies `undefined`, and Math.floor of that
+    // is NaN — under a `<= 0` test it would fall through to the clamp below and
+    // silently blend the entire step. The off switch has to hold for absent input.
+    if (!(requested > 0)) {
+      return 0
+    }
+    // Always leave at least one frame sitting on the pure target pose. A step
+    // shorter than the blend window would otherwise spend its entire life
+    // mid-sweep, and the classifier would never once see the letter it is
+    // supposed to be holding.
+    const room = (step.frames > 1 ? step.frames : 1) - 1
+    return requested < room ? requested : room
   }
 
   private updateStatusText(): void {

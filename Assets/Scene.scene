@@ -9,7 +9,12 @@
     - !<own> 35128c07-1865-49aa-9505-ff73bbe83f2c
     - !<own> 610ed123-11e1-41c7-b103-94a63586fe86
     - !<own> db82cfbc-1b35-4bec-b349-c712b4799f2a
-    - !<own> 25c4aefd-b012-4130-b2bc-6e5e462ac362
+    - !<own> 3d61d896-f113-4af3-b98f-32db16eb0168
+    - !<own> 55196f06-944b-442a-b7c3-30f985f33852
+    - !<own> 69d798cd-1051-4a82-a75b-c9dd7015e23a
+    - !<own> 5c421e9d-ee8d-4069-a60d-c939ac87df6f
+    - !<own> eca05ffd-9093-47d7-8d77-5863c9c189fb
+    - !<own> cf8b8a8e-13e7-42c3-8bbd-703673e270cf
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       - id: 1
@@ -180,6 +185,23 @@
   FalloffType: None
   FalloffRange: .inf
   ShadowType: None
+- !<AudioComponent/004df9be-12cf-4e23-8c47-92c128484c1b>
+  PrefabRemaps:
+    []
+  Name: Audio
+  Enabled: true
+  AudioTrack: !<reference> a53785b7-4c11-45f7-8dd3-34d6604787de
+  EnableAutoplayLoop: false
+  Volume: 1.000000
+  EnableMixToSnap: false
+  RecordVolume: 1.000000
+  EnableSpatialAudio: false
+  EnableDistanceEffect: false
+  CurveType: Logarithm
+  MinDistance: 0.000000
+  MaxDistance: 100.000000
+  EnableDirectivityEffect: false
+  EnablePositionEffect: false
 - !<SceneObject/012a3973-9507-4230-a6ff-2b8dfd2154fe>
   PrefabRemaps:
     []
@@ -612,21 +634,6 @@
     []
   Components:
     []
-- !<SceneObject/25c4aefd-b012-4130-b2bc-6e5e462ac362>
-  PrefabRemaps:
-    []
-  Name: LEAF Plugin Bridge
-  Enabled: true
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> 4c925872-95d4-45e3-b6c0-f5875196135f
 - !<SceneObject/264571d0-f879-411b-8deb-ff6d9921317f>
   PrefabRemaps:
     []
@@ -744,6 +751,23 @@
     - !<own> a7da4af4-3d84-4acd-a31e-920a56b4c5c8
   Components:
     []
+- !<AudioComponent/3344252b-df83-45a4-858a-dbf1f3e97cdf>
+  PrefabRemaps:
+    []
+  Name: Audio
+  Enabled: true
+  AudioTrack: !<reference> 5f16a6b1-1d31-4b63-a3e0-f3f450c9f9f8
+  EnableAutoplayLoop: false
+  Volume: 1.000000
+  EnableMixToSnap: false
+  RecordVolume: 1.000000
+  EnableSpatialAudio: false
+  EnableDistanceEffect: false
+  CurveType: Logarithm
+  MinDistance: 0.000000
+  MaxDistance: 100.000000
+  EnableDirectivityEffect: false
+  EnablePositionEffect: false
 - !<RenderMeshVisual/335c5f8b-2917-49e8-8af5-220696e9bc09>
   PrefabRemaps:
     []
@@ -875,6 +899,59 @@
     - !<own> 54130007-65c1-48d3-b9df-0866d8112e01
   Components:
     []
+- !<ScriptComponent/3bc89efa-6209-4fbc-afab-71fbe40dc144>
+  PrefabRemaps:
+    []
+  Name: HandVisualizer
+  Enabled: true
+  ScriptAsset: !<reference> 1866c4e8-07a4-4f58-a81a-3fd5ec6fb074
+  ScriptInputsDefault:
+    offset: true
+    rotationDegrees: true
+    neutralColor: true
+    warmColor: true
+    confirmColor: true
+    confirmSeconds: true
+    matchFarColor: true
+    matchNearColor: true
+    hideWhenUntracked: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      jointMaterial: !<reference.Material> 16ef55cc-0b21-4b3c-94af-9e33958ac9d3
+      boneMaterial: !<reference.Material> 6a2dea5d-979d-4f56-b4bd-fae35d19ff0b
+      handScale: !<float> 5.000000
+      offset: !<Vec3> {x: 0.000000, y: 0.000000, z: 2.000000}
+      rotationDegrees: !<Vec3> {x: 0.000000, y: 180.000000, z: 0.000000}
+      jointRadius: 0.240000
+      boneThickness: 0.120000
+      neutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      warmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      confirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      confirmSeconds: 0.450000
+      boneDimming: 0.500000
+      matchFarColor: !<Vec4> {x: 0.300000, y: 0.420000, z: 0.520000, w: 0.550000}
+      matchNearColor: !<Vec4> {x: 0.350000, y: 0.950000, z: 0.850000, w: 1.000000}
+      hideWhenUntracked: true
+  ScriptTypes:
+    "":
+      {}
+- !<SceneObject/3d61d896-f113-4af3-b98f-32db16eb0168>
+  PrefabRemaps:
+    []
+  Name: LEAF Plugin Bridge
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> be045a84-6896-43cf-b347-1c0caebb5978
 - !<SceneObject/3de2c7ea-1525-465a-9056-68565a4014a7>
   PrefabRemaps:
     []
@@ -980,22 +1057,6 @@
     - !<own> 9c3a7929-faa9-4369-a85c-c75a6ab4eee7
   Components:
     []
-- !<ScriptComponent/4c925872-95d4-45e3-b6c0-f5875196135f>
-  PrefabRemaps:
-    []
-  Name: MessagingBridge
-  Enabled: true
-  ScriptAsset: !<reference> 9aa407db-2872-4afc-a162-cf7faf2a0f29
-  ScriptInputsDefault:
-    {}
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      {}
-  ScriptTypes:
-    "":
-      {}
 - !<SceneObject/4cb212ad-5246-4215-adf1-aaf3ccfc0e9c>
   PrefabRemaps:
     []
@@ -1041,6 +1102,21 @@
     - !<own> 46b79537-a269-46f1-9483-500d7a4170d6
   Components:
     []
+- !<SceneObject/55196f06-944b-442a-b7c3-30f985f33852>
+  PrefabRemaps:
+    []
+  Name: HandVisualizer
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: -9.000000, y: -2.500000, z: -110.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 7733ff86-8d5b-43a6-b863-d7f98fd33128
 - !<SceneObject/58ef319f-850e-40dd-8295-e6dc36ab4854>
   PrefabRemaps:
     []
@@ -1056,6 +1132,37 @@
     - !<own> bf2095b6-c6f8-48c8-b840-e0a6cec0dc99
   Components:
     []
+- !<ScriptComponent/591e9b96-99c0-4cf3-8358-037682dbd879>
+  PrefabRemaps:
+    []
+  Name: AgentInspectScript
+  Enabled: true
+  ScriptAsset: !<reference> 0b25079c-f5bf-4c6d-96c4-f43b89dfa213
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}
+- !<SceneObject/5c421e9d-ee8d-4069-a60d-c939ac87df6f>
+  PrefabRemaps:
+    []
+  Name: SFX Phrase Complete
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 3344252b-df83-45a4-858a-dbf1f3e97cdf
 - !<ScriptComponent/5f153ad7-2baa-4fd9-a298-0dcfad86da3b>
   PrefabRemaps:
     []
@@ -1221,6 +1328,21 @@
     - !<own> 80574bd1-697b-4bb5-b9ce-13b340146d82
   Components:
     - !<own> ccf4d3bc-d3c2-4580-b9c5-62f164ef7eef
+- !<SceneObject/69d798cd-1051-4a82-a75b-c9dd7015e23a>
+  PrefabRemaps:
+    []
+  Name: SFX Letter Commit
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 004df9be-12cf-4e23-8c47-92c128484c1b
 - !<SceneObject/6a7a67db-5675-49bb-8f31-ba0588e3cffc>
   PrefabRemaps:
     []
@@ -1294,7 +1416,11 @@
     showStatusLine: true
     rowGap: true
     padding: true
-    barHeight: true
+    barWidthFraction: true
+    barNeutralColor: true
+    barWarmColor: true
+    barConfirmColor: true
+    barTrackColor: true
     headerLabel: true
     emptyPlaceholder: true
     doneColor: true
@@ -1317,7 +1443,12 @@
       panelWidth: !<float> 40.000000
       rowGap: 1.600000
       padding: 2.200000
-      barHeight: 1.200000
+      barHeight: 1.800000
+      barWidthFraction: 0.720000
+      barNeutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      barWarmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      barConfirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      barTrackColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.160000}
       headerLabel: SIGNING
       emptyPlaceholder: —
       doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
@@ -1405,6 +1536,45 @@
     - !<own> 241be3d8-6f45-47d7-8b71-53778e375dc2
   Components:
     []
+- !<ScriptComponent/7733ff86-8d5b-43a6-b863-d7f98fd33128>
+  PrefabRemaps:
+    []
+  Name: HandVisualizer
+  Enabled: true
+  ScriptAsset: !<reference> 1866c4e8-07a4-4f58-a81a-3fd5ec6fb074
+  ScriptInputsDefault:
+    offset: true
+    rotationDegrees: true
+    neutralColor: true
+    warmColor: true
+    confirmColor: true
+    confirmSeconds: true
+    boneDimming: true
+    matchFarColor: true
+    matchNearColor: true
+    hideWhenUntracked: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      jointMaterial: !<reference.Material> 3e573a8d-630d-4f9f-8631-1e17dd8c65d4
+      boneMaterial: !<reference.Material> 7eb0a040-5e4c-4d9d-8bd4-aaa80d796e10
+      handScale: !<float> 5.000000
+      offset: !<Vec3> {x: 0.000000, y: 0.000000, z: 2.000000}
+      rotationDegrees: !<Vec3> {x: 0.000000, y: 180.000000, z: 0.000000}
+      jointRadius: 0.380000
+      boneThickness: 0.230000
+      neutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      warmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      confirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      confirmSeconds: 0.450000
+      boneDimming: 0.550000
+      matchFarColor: !<Vec4> {x: 0.300000, y: 0.420000, z: 0.520000, w: 0.550000}
+      matchNearColor: !<Vec4> {x: 0.350000, y: 0.950000, z: 0.850000, w: 1.000000}
+      hideWhenUntracked: true
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/77a79970-63f4-4c7c-984a-539d2ef0c92a>
   PrefabRemaps:
     []
@@ -1461,7 +1631,11 @@
     showAssembledText: true
     rowGap: true
     padding: true
-    barHeight: true
+    barWidthFraction: true
+    barNeutralColor: true
+    barWarmColor: true
+    barConfirmColor: true
+    barTrackColor: true
     headerLabel: true
     emptyPlaceholder: true
     doneColor: true
@@ -1484,7 +1658,12 @@
       panelWidth: !<float> 48.000000
       rowGap: 1.600000
       padding: 2.200000
-      barHeight: 1.200000
+      barHeight: 1.800000
+      barWidthFraction: 0.720000
+      barNeutralColor: !<Vec4> {x: 0.360000, y: 0.580000, z: 0.880000, w: 1.000000}
+      barWarmColor: !<Vec4> {x: 1.000000, y: 0.720000, z: 0.180000, w: 1.000000}
+      barConfirmColor: !<Vec4> {x: 0.240000, y: 0.940000, z: 0.460000, w: 1.000000}
+      barTrackColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 0.160000}
       headerLabel: SIGNING
       emptyPlaceholder: —
       doneColor: !<Vec4> {x: 0.450000, y: 0.900000, z: 0.550000, w: 1.000000}
@@ -1791,6 +1970,10 @@
   Enabled: true
   ScriptAsset: !<reference> 5c365251-6ec1-437e-9a9b-5ad03a9171fa
   ScriptInputsDefault:
+    showReferenceHand: true
+    demoPoseAsset: true
+    autoAdvanceSeconds: true
+    autoAdvanceTailGap: true
     featureMode: true
     k: true
     thumbWeight: true
@@ -1800,6 +1983,9 @@
     rearmFrames: true
     signingHand: true
     verbose: true
+    startDelaySeconds: true
+    loopDemo: true
+    loopPauseSeconds: true
   ScriptTypesDefault:
     {}
   ScriptInputs:
@@ -1808,6 +1994,14 @@
       inwardPanel: !<MappingBased.AssignableType_1> 6cc94236-1139-4e7a-89b0-4e7fabe00523
       outwardPanel: !<MappingBased.AssignableType_2> 7b0d95ea-c8f7-4755-928d-e955250f3fbe
       mockHandInput: !<MappingBased.AssignableType_3> f1530f52-dbeb-487f-acb8-8658eaeee416
+      handVisualizer: !<MappingBased.AssignableType_4> 7733ff86-8d5b-43a6-b863-d7f98fd33128
+      referenceHandVisualizer: !<MappingBased.AssignableType_5> 3bc89efa-6209-4fbc-afab-71fbe40dc144
+      showReferenceHand: true
+      demoPoseAsset: !<reference.Asset> 00000000-0000-0000-0000-000000000000
+      letterCommitAudio: !<reference.AudioComponent> 004df9be-12cf-4e23-8c47-92c128484c1b
+      phraseCompleteAudio: !<reference.AudioComponent> 3344252b-df83-45a4-858a-dbf1f3e97cdf
+      autoAdvanceSeconds: !<float> 0.000000
+      autoAdvanceTailGap: 0.250000
       featureMode: full
       k: !<float> 1.000000
       thumbWeight: !<float> 1.000000
@@ -1817,6 +2011,9 @@
       rearmFrames: !<float> 3.000000
       signingHand: right
       verbose: true
+      startDelaySeconds: !<float> 0.000000
+      loopDemo: false
+      loopPauseSeconds: 2.500000
   ScriptTypes:
     "":
       {}
@@ -2169,6 +2366,22 @@
     - !<own> fe93d992-1114-4f1f-8bef-0a0bbd75747d
   Components:
     []
+- !<ScriptComponent/be045a84-6896-43cf-b347-1c0caebb5978>
+  PrefabRemaps:
+    []
+  Name: MessagingBridge
+  Enabled: true
+  ScriptAsset: !<reference> 9aa407db-2872-4afc-a162-cf7faf2a0f29
+  ScriptInputsDefault:
+    {}
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      {}
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/bf2095b6-c6f8-48c8-b840-e0a6cec0dc99>
   PrefabRemaps:
     []
@@ -2312,6 +2525,21 @@
     - !<own> 650dc0b4-8d22-4aab-87b4-d8e56fb59a67
   Components:
     - !<own> 0847d2bb-a13f-4c4a-a404-169f67308f6f
+- !<SceneObject/cf8b8a8e-13e7-42c3-8bbd-703673e270cf>
+  PrefabRemaps:
+    []
+  Name: ReferenceHand
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 9.000000, y: -2.500000, z: -110.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 3bc89efa-6209-4fbc-afab-71fbe40dc144
 - !<SceneObject/d08269e3-acd4-4156-b5b9-477ca259611d>
   PrefabRemaps:
     []
@@ -2595,6 +2823,21 @@
     Fingers_length: 0.000000
     Thumb_inflate: 0.000000
     Thumb_length: 0.000000
+- !<SceneObject/eca05ffd-9093-47d7-8d77-5863c9c189fb>
+  PrefabRemaps:
+    []
+  Name: AiPreviewAgent Handler
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 591e9b96-99c0-4cf3-8358-037682dbd879
 - !<SceneObject/f0394c5d-4c44-4c65-a77c-e1c7e05ca905>
   PrefabRemaps:
     []

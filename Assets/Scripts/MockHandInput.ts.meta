@@ -29,6 +29,7 @@
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
     autoAdvance: false
+    interpolateFrames: false
     jitterSigma: false
     loopSequence: false
     makeActive: false
@@ -50,6 +51,7 @@
       jitterSigma: !<float> 0.000000
       randomSeed: !<float> 1.000000
       preserveStructuralDims: true
+      interpolateFrames: !<float> 0.000000
       statusText: !<reference.Text> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
@@ -61,4 +63,5 @@
     - '// @input float jitterSigma {"hint":"Standard deviation of gaussian noise added per dimension, in normalized units. 0 disables jitter."}'
     - '// @input float randomSeed = 1 {"hint":"Seed for the noise generator. Same seed plus same sequence replays identically."}'
     - '// @input bool preserveStructuralDims = true {"hint":"Leave the 6 structurally-constant dims un-jittered, keeping output on the valid manifold. Recommended ON."}'
+    - '// @input float interpolateFrames {"hint":"Blend from the last tracked pose into each new one over this many frames instead of snapping. 0 = off (shipped). Filming aid."}'
     - '// @input Component.Text statusText {"hint":"Optional. Shows the current step label and frame, so preview state is visible at a glance."}'

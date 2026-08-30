@@ -218,6 +218,11 @@ export class HandVisualizer extends BaseScriptComponent {
   @input
   @hint("Hide the rig on untracked frames. On means the gaps in the input are visible as gaps — recommended, since the point is to show the real input.")
   hideWhenUntracked: boolean = true
+
+  @input
+  @allowUndefined
+  @hint("Optional caption object for this rig. In reference mode it is hidden with the rig; in live mode it stays put.")
+  labelObject: SceneObject
   @ui.group_end
 
   private rig: SceneObject | null = null
@@ -350,16 +355,9 @@ export class HandVisualizer extends BaseScriptComponent {
       return
     }
     const usable = features !== null && features.length >= LANDMARK_COUNT * 3
+    this.setReferenceVisible(usable)
     if (!usable) {
-      if (this.visible) {
-        this.rig.enabled = false
-        this.visible = false
-      }
       return
-    }
-    if (!this.visible) {
-      this.rig.enabled = true
-      this.visible = true
     }
 
     this.drawPose(features)
@@ -369,6 +367,31 @@ export class HandVisualizer extends BaseScriptComponent {
     this.jointMaterial.mainPass.baseColor = color
     const d = this.boneDimming
     this.boneMaterial.mainPass.baseColor = new vec4(color.x * d, color.y * d, color.z * d, color.w)
+  }
+
+  /**
+   * Show or hide the reference rig and its caption together.
+   *
+   * Only the reference path does this. There, hiding is meaningful — the phrase
+   * is complete, so there is no letter left to copy and the caption would be
+   * captioning nothing. The live rig hides on every untracked frame instead,
+   * and the gaps between letters are only ~12 frames, so binding the live
+   * caption to the same flag would strobe it several times per word. The live
+   * caption marks a fixed place in the layout, so it stays put.
+   */
+  private setReferenceVisible(on: boolean): void {
+    // Called every reference frame, not only on a change. The rig is created
+    // disabled while the caption is authored ENABLED in the scene, so on the
+    // first hidden frame there is no state change to react to — a write guarded
+    // on `visible` leaves the caption stranded on screen with no hand under it.
+    // The equality checks keep the steady-state cost at two comparisons.
+    if (this.rig !== null && this.rig.enabled !== on) {
+      this.rig.enabled = on
+    }
+    if (this.labelObject && this.labelObject.enabled !== on) {
+      this.labelObject.enabled = on
+    }
+    this.visible = on
   }
 
   /** Write one 78-dim vector into the joint and bone transforms. */

@@ -36,6 +36,8 @@
     inwardPanel: false
     k: false
     letterCommitAudio: false
+    loopDemo: false
+    loopPauseSeconds: false
     maxDistance: false
     minMeanConfidence: false
     mockHandInput: false
@@ -45,6 +47,7 @@
     referenceHandVisualizer: false
     showReferenceHand: false
     signingHand: false
+    startDelaySeconds: false
     templatesAsset: false
     thumbWeight: false
     verbose: false
@@ -79,6 +82,9 @@
       rearmFrames: !<float> 3.000000
       signingHand: right
       verbose: true
+      startDelaySeconds: !<float> 0.000000
+      loopDemo: false
+      loopPauseSeconds: 2.500000
   ScriptTypes:
     -
       {}
@@ -115,4 +121,10 @@
     - '// @ui {"widget":"group_start", "label":"Session"}'
     - '// @input string signingHand = "right" {"hint":"The hand that signs. Ignored while a MockHandInput is the active source.", "widget":"combobox", "values":[{"label":"right", "value":"right"}, {"label":"left", "value":"left"}]}'
     - '// @input bool verbose = true {"hint":"Log a line on every commit, wrong letter and phrase completion."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"group_start", "label":"Filming aids"}'
+    - '// @ui {"widget":"label", "label":"Recording conveniences, NOT product behaviour. Both default to shipped behaviour; set them back to 0 / off before committing."}'
+    - '// @input float startDelaySeconds {"hint":"Hold the mock idle for this long after load, so recording can start before anything happens. 0 = shipped behaviour: the mock plays immediately.", "widget":"slider", "min":0, "max":15, "step":0.5}'
+    - '// @input bool loopDemo {"hint":"Restart the phrase and the mock sequence after completion so a take can loop. Off = shipped behaviour: the demo stops on the finished word."}'
+    - '// @input float loopPauseSeconds = 2.5 {"hint":"Pause between loop cycles. Long enough that the completion chime finishes and the finished word is readable before the reset.", "widget":"slider", "min":0.5, "max":8, "step":0.25}'
     - '// @ui {"widget":"group_end"}'
