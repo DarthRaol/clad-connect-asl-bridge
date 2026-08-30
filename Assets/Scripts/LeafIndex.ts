@@ -1,6 +1,7 @@
 import {scenariosIndex} from "Leaf.lspkg/Scenarios/decorator/ScenarioIndexDecorator"
 import {ScenarioMetadata} from "Leaf.lspkg/Scenarios/scenario/ScenarioMetadata"
 import {SignBridgeAlphabetCoverageScenario} from "./SignBridgeAlphabetCoverageScenario"
+import {SignBridgeAlphabetDemoScenario} from "./SignBridgeAlphabetDemoScenario"
 import {SignBridgeCompletesWordScenario} from "./SignBridgeCompletesWordScenario"
 import {SignBridgeInterruptedHoldScenario} from "./SignBridgeInterruptedHoldScenario"
 import {SignBridgeLowConfidenceScenario} from "./SignBridgeLowConfidenceScenario"
@@ -34,6 +35,10 @@ export class LeafIndex extends BaseScriptComponent {
     {
       id: "signbridge-alphabet-coverage",
       typename: SignBridgeAlphabetCoverageScenario.getTypeName()
+    },
+    {
+      id: "signbridge-alphabet-demo",
+      typename: SignBridgeAlphabetDemoScenario.getTypeName()
     }
   ]
 }

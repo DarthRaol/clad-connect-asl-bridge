@@ -99,7 +99,9 @@ The synthetic template generator was extended to all 24 static letters with an a
 
 It worked — U and V separated, R became distinct. Then it was measured against a 1.5× separability gate (nearest-other-letter distance over within-letter spread), and **12 of 24 letters failed**.
 
-Adoption was gated on that measurement, so the 24-letter set was not adopted. Shipping 6 letters that work beat shipping 24 that misclassify on camera. Full table and analysis in [`docs/SEPARABILITY.md`](docs/SEPARABILITY.md).
+Adoption was gated on that measurement, so the 24-letter set was not adopted at that point. Shipping 6 letters that work beat shipping 24 that misclassify on camera. Full table and analysis in [`docs/SEPARABILITY.md`](docs/SEPARABILITY.md).
+
+The set was later expanded to **20 letters** under a different, behavioural gate: leave-one-out classification (every sample must classify to itself, 5/5, across 12 independent jitter draws — 1200/1200). The 20 are the 24 static letters minus one of each rotation-collision pair (H, P, Q dropped in favour of U, K, G) and minus M, whose M/N boundary misclassified on 1 of 60 draws. The trade this makes is stated, not hidden: a signer forming H, P or Q will be shown the collision partner the set kept, because the feature space cannot tell them apart.
 
 ### A green compile proved nothing
 
@@ -116,10 +118,10 @@ Neither was catchable by TypeScript. Both were caught by running the Lens and re
 
 - **One-directional.** ASR was never wired. There is no speech-to-text leg. The hearing person can read; they cannot reply through the glasses.
 - **Templates are synthetic geometry, not recorded hands.** The pipeline is verified end to end. Recognition accuracy against real hands is not verified.
-- **6 letters: L, U, K, E, C, O.** J and Z are excluded as motion letters — they are defined by movement, and no single-frame template can represent them.
+- **20 letters: A B C D E F G I K L N O R S T U V W X Y.** Absent: J/Z (motion letters — no single-frame template can represent them), H/P/Q (rotation-collision partners of U/K/G — measured at distance 0.000, so loading both members of a pair makes the classifier a coin flip), and M (its boundary with N misclassifies under jitter, 1/60). A signer forming an absent collision letter is shown its kept partner — that exposure is the price of the coverage.
 - **`maxDistance` is uncalibrated.** It stays at `Infinity`, so the out-of-vocabulary distance gate is built and inert. A hand far from every template can still score high margin confidence if it is nearer one template than the rest.
 - **G/Q, H/U and K/P are indistinguishable** in the current feature space, as measured above.
-- **The phrase menu is untested beyond one entry.** With 6 loaded letters, `signablePhrases()` returns exactly one phrase.
+- **The phrase menu now has 5 signable entries** (LUKE, RIO, AR, CLAD, FRIEND); the rest of `DEFAULT_PHRASES` still needs H, M or P.
 - **A hardware recording session is the entire gap** between this and a working recognizer. The recorder is built and unused — including a `_NEGATIVE` calibration mode for ~30 non-letter poses, which exists specifically so `maxDistance` can be set from the measured separation between letter and non-letter distances rather than guessed.
 
 ## Framing
@@ -141,7 +143,7 @@ Six LEAF scenarios run against the live Lens in preview, driving `SignBridge` th
 | `signbridge-interrupted-hold` | a hold broken midway does not commit |
 | `signbridge-wrong-letter-does-not-advance` | a wrong commit is recorded, index does not advance |
 | `signbridge-no-spurious-double` | one rejected frame does not re-arm into a double commit |
-| `signbridge-alphabet-coverage` | all 26 letters have a defined behaviour: 6 recognized end-to-end, 18 absent and refused by phrase gating, J/Z excluded as motion letters |
+| `signbridge-alphabet-coverage` | all 26 letters have a defined behaviour: 20 recognized end-to-end, 4 absent and refused by phrase gating (H M P Q), J/Z excluded as motion letters |
 
 The suite is **mutation-tested**, twice. Reverting the re-arm fix (`rearmFrames` 3 → 1) made `signbridge-no-spurious-double` fail with `Expected: "0" — Received: "1"`. Making `unsignableLetters()` return `[]` — the exact regression where templates change but phrase gating does not — made `signbridge-alphabet-coverage` fail with `Expected: "> -1" — Received: "-1"`, and collapsed the phrase menu from 1 seatable phrase to all 14. Both guards fire; neither passes vacuously.
 
@@ -163,7 +165,7 @@ Full session transcript: [`docs/PROMPT_LOG.md`](docs/PROMPT_LOG.md).
 Assets/Scripts/     LandmarkCapture · Classifier · HoldBuffer · PhraseController
                     SignPanel · HandVisualizer · SignBridge · MockHandInput
                     TemplateRecorder · TemplateFormat · 5 LEAF scenarios
-Assets/Data/        templates.synthetic.json (6 letters, flagged synthetic)
+Assets/Data/        templates.synthetic.json (20 letters, flagged synthetic; 6-letter fallback kept alongside)
 tools/              gen-synthetic-templates.js — generator + separability report
 docs/               JOINTS.md · SEPARABILITY.md · PROMPT_LOG.md · VIDEO_SHOTLIST.md
 ```

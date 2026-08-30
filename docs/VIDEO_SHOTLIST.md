@@ -1,5 +1,9 @@
 # Demo video shot list
 
+> **Recorded against the 6-letter set.** After recording, the template set was expanded to 20 letters under the
+> LOO adoption gate (see `docs/SEPARABILITY.md`). The video's on-screen counts (six recognized, eighteen absent)
+> were correct at record time; the shipped Lens now recognizes 20.
+
 **Target: 75–90 seconds.** Ordered so the strongest material lands last — K/P identity, then the suite passing, then the suite *failing* when the fix is reverted. Those are the three a judge will remember.
 
 Capture source is marked on every shot: **[P]** = Lens Studio preview panel, **[T]** = terminal / Claude Code session.

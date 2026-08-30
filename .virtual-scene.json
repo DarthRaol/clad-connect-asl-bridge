@@ -5227,7 +5227,7 @@
             },
             "interpolateFrames": {
               "isScriptInput": true,
-              "value": 8,
+              "value": 0,
               "type": "float",
               "uiInfo": "{\"hint\":\"Blend from the last tracked pose into each new one over this many frames instead of snapping. 0 = off (shipped). Filming aid.\"}"
             },
@@ -5327,15 +5327,6 @@
               "type": "float",
               "uiInfo": "{\"hint\":\"Seconds to wait after completing a phrase before seating the next. 0 disables auto-advance. If below the completion sound's length it is raised, so the next phrase never starts under the tail.\", \"widget\":\"slider\", \"min\":0, \"max\":10, \"step\":0.25}"
             },
-            "letterCommitAudio": {
-              "isScriptInput": true,
-              "value": {
-                "UUID": "004df9be-12cf-4e23-8c47-92c128484c1b",
-                "name": "Audio"
-              },
-              "type": "Component.AudioComponent",
-              "uiInfo": "{\"hint\":\"Short chime on each committed letter. Set to LowLatency at start so it lands on the commit frame.\"}"
-            },
             "inwardPanel": {
               "isScriptInput": true,
               "value": {
@@ -5361,19 +5352,26 @@
               "uiInfo": "{\"hint\":\"Extra silence between the completion sound ending and the next phrase appearing.\", \"widget\":\"slider\", \"min\":0, \"max\":2, \"step\":0.05}",
               "defaultValue": "0.25"
             },
-            "k": {
-              "isScriptInput": true,
-              "value": 1,
-              "type": "float",
-              "uiInfo": "{\"hint\":\"How many of a letter's nearest templates to average into its score.\", \"widget\":\"slider\", \"min\":1, \"max\":5, \"step\":1}",
-              "defaultValue": "1"
-            },
             "featureMode": {
               "isScriptInput": true,
               "value": "full",
               "type": "string",
               "uiInfo": "{\"hint\":\"Feature space distances are computed in. 'full' = 78 dims, 'reduced' = 57.\", \"widget\":\"combobox\", \"values\":[{\"label\":\"full\", \"value\":\"full\"}, {\"label\":\"reduced\", \"value\":\"reduced\"}]}",
               "defaultValue": "full"
+            },
+            "enableFlow": {
+              "isScriptInput": true,
+              "value": true,
+              "type": "bool",
+              "uiInfo": "{\"hint\":\"Idle screen with a START button, then speech-to-text, then spelling. Off = legacy behaviour: spelling starts immediately on load.\"}",
+              "defaultValue": "true"
+            },
+            "flowCompleteHoldSeconds": {
+              "isScriptInput": true,
+              "value": 4,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"How long the finished word stays up before returning to the idle screen. Ignored while loopDemo is on.\", \"widget\":\"slider\", \"min\":1, \"max\":10, \"step\":0.5}",
+              "defaultValue": "4"
             },
             "handVisualizer": {
               "isScriptInput": true,
@@ -5384,9 +5382,25 @@
               "type": "AssignableType_4",
               "uiInfo": "{\"hint\":\"Optional. Draws the exact feature vector the classifier scores, as a hand between the panels.\"}"
             },
+            "k": {
+              "isScriptInput": true,
+              "value": 1,
+              "type": "float",
+              "uiInfo": "{\"hint\":\"How many of a letter's nearest templates to average into its score.\", \"widget\":\"slider\", \"min\":1, \"max\":5, \"step\":1}",
+              "defaultValue": "1"
+            },
+            "letterCommitAudio": {
+              "isScriptInput": true,
+              "value": {
+                "UUID": "004df9be-12cf-4e23-8c47-92c128484c1b",
+                "name": "Audio"
+              },
+              "type": "Component.AudioComponent",
+              "uiInfo": "{\"hint\":\"Short chime on each committed letter. Set to LowLatency at start so it lands on the commit frame.\"}"
+            },
             "loopDemo": {
               "isScriptInput": true,
-              "value": true,
+              "value": false,
               "type": "bool",
               "uiInfo": "{\"hint\":\"Restart the phrase and the mock sequence after completion so a take can loop. Off = shipped behaviour: the demo stops on the finished word.\"}"
             },
@@ -5458,9 +5472,16 @@
               "uiInfo": "{\"hint\":\"The hand that signs. Ignored while a MockHandInput is the active source.\", \"widget\":\"combobox\", \"values\":[{\"label\":\"right\", \"value\":\"right\"}, {\"label\":\"left\", \"value\":\"left\"}]}",
               "defaultValue": "right"
             },
+            "simulatedTranscript": {
+              "isScriptInput": true,
+              "value": "LUKE",
+              "type": "string",
+              "uiInfo": "{\"hint\":\"Preview-only stand-in transcript. The editor cannot run AsrModule, so pinching START shows 'SIMULATED INPUT: <this>' and uses it verbatim — labelled as simulated, never presented as ASR.\"}",
+              "defaultValue": "LUKE"
+            },
             "startDelaySeconds": {
               "isScriptInput": true,
-              "value": 3,
+              "value": 0,
               "type": "float",
               "uiInfo": "{\"hint\":\"Hold the mock idle for this long after load, so recording can start before anything happens. 0 = shipped behaviour: the mock plays immediately.\", \"widget\":\"slider\", \"min\":0, \"max\":15, \"step\":0.5}"
             },
@@ -5491,27 +5512,30 @@
             "inputNames.0": "autoAdvanceSeconds",
             "inputNames.1": "autoAdvanceTailGap",
             "inputNames.2": "demoPoseAsset",
-            "inputNames.3": "featureMode",
-            "inputNames.4": "handVisualizer",
-            "inputNames.5": "inwardPanel",
-            "inputNames.6": "k",
-            "inputNames.7": "letterCommitAudio",
-            "inputNames.8": "loopDemo",
-            "inputNames.9": "loopPauseSeconds",
-            "inputNames.10": "maxDistance",
-            "inputNames.11": "minMeanConfidence",
-            "inputNames.12": "mockHandInput",
-            "inputNames.13": "outwardPanel",
-            "inputNames.14": "phraseCompleteAudio",
-            "inputNames.15": "rearmFrames",
-            "inputNames.16": "referenceHandVisualizer",
-            "inputNames.17": "showReferenceHand",
-            "inputNames.18": "signingHand",
-            "inputNames.19": "startDelaySeconds",
-            "inputNames.20": "templatesAsset",
-            "inputNames.21": "thumbWeight",
-            "inputNames.22": "verbose",
-            "inputNames.23": "windowFrames",
+            "inputNames.3": "enableFlow",
+            "inputNames.4": "featureMode",
+            "inputNames.5": "flowCompleteHoldSeconds",
+            "inputNames.6": "handVisualizer",
+            "inputNames.7": "inwardPanel",
+            "inputNames.8": "k",
+            "inputNames.9": "letterCommitAudio",
+            "inputNames.10": "loopDemo",
+            "inputNames.11": "loopPauseSeconds",
+            "inputNames.12": "maxDistance",
+            "inputNames.13": "minMeanConfidence",
+            "inputNames.14": "mockHandInput",
+            "inputNames.15": "outwardPanel",
+            "inputNames.16": "phraseCompleteAudio",
+            "inputNames.17": "rearmFrames",
+            "inputNames.18": "referenceHandVisualizer",
+            "inputNames.19": "showReferenceHand",
+            "inputNames.20": "signingHand",
+            "inputNames.21": "simulatedTranscript",
+            "inputNames.22": "startDelaySeconds",
+            "inputNames.23": "templatesAsset",
+            "inputNames.24": "thumbWeight",
+            "inputNames.25": "verbose",
+            "inputNames.26": "windowFrames",
             "name": "SignBridge",
             "enabled": true,
             "sceneObject": "@sceneObject:SignBridge",
@@ -5863,48 +5887,6 @@
             "hasPrefabChanges": false,
             "id": "3344252b-df83-45a4-858a-dbf1f3e97cdf",
             "type": "AudioComponent"
-          }
-        }
-      ]
-    },
-    {
-      "id": "eca05ffd-9093-47d7-8d77-5863c9c189fb",
-      "name": "AiPreviewAgent Handler",
-      "enabled": true,
-      "parentId": null,
-      "transform": {
-        "position": [
-          0,
-          0,
-          0
-        ],
-        "rotation": [
-          0,
-          0,
-          0
-        ],
-        "scale": [
-          1,
-          1,
-          1
-        ]
-      },
-      "layers": 1,
-      "components": [
-        {
-          "id": "591e9b96-99c0-4cf3-8358-037682dbd879",
-          "type": "ScriptComponent",
-          "name": "AgentInspectScript",
-          "enabled": true,
-          "properties": {
-            "scriptAsset": "@asset:Packages/AiPreviewAgentInspect.lspkg/AgentInspectScript.ts",
-            "name": "AgentInspectScript",
-            "enabled": true,
-            "sceneObject": "@sceneObject:AiPreviewAgent Handler",
-            "isPrefabInstanceRoot": false,
-            "hasPrefabChanges": false,
-            "id": "591e9b96-99c0-4cf3-8358-037682dbd879",
-            "type": "ScriptComponent"
           }
         }
       ]
@@ -6885,6 +6867,64 @@
             "hasPrefabChanges": false,
             "id": "2d4bc7e0-e4e2-4d95-92a7-cb1ff1aad5ba",
             "type": "Text"
+          }
+        }
+      ]
+    },
+    {
+      "id": "bc18c68c-a12e-4b59-ba62-03d98b54f0fc",
+      "name": "AiPreviewAgent Handler",
+      "enabled": true,
+      "parentId": null,
+      "transform": {
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          1,
+          1,
+          1
+        ]
+      },
+      "layers": 1,
+      "components": [
+        {
+          "id": "e324f233-3520-46f3-8096-ac5e31480c39",
+          "type": "ScriptComponent",
+          "name": "AgentInspectScript",
+          "enabled": true,
+          "properties": {
+            "scriptAsset": "@asset:Packages/AiPreviewAgentInspect.lspkg/AgentInspectScript.ts",
+            "name": "AgentInspectScript",
+            "enabled": true,
+            "sceneObject": "@sceneObject:AiPreviewAgent Handler",
+            "isPrefabInstanceRoot": false,
+            "hasPrefabChanges": false,
+            "id": "e324f233-3520-46f3-8096-ac5e31480c39",
+            "type": "ScriptComponent"
+          }
+        },
+        {
+          "id": "49a69afd-9f7b-40ee-8b41-52e7c3f85026",
+          "type": "ScriptComponent",
+          "name": "AgentInteractScript",
+          "enabled": true,
+          "properties": {
+            "scriptAsset": "@asset:Packages/AiPreviewAgentInteract.lspkg/AgentInteractScript.ts",
+            "name": "AgentInteractScript",
+            "enabled": true,
+            "sceneObject": "@sceneObject:AiPreviewAgent Handler",
+            "isPrefabInstanceRoot": false,
+            "hasPrefabChanges": false,
+            "id": "49a69afd-9f7b-40ee-8b41-52e7c3f85026",
+            "type": "ScriptComponent"
           }
         }
       ]

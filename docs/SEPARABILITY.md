@@ -1,6 +1,6 @@
 # Separability analysis
 
-Why the shipped template set contains 6 letters and not 24.
+Why the shipped template set contains 20 letters and not 24 — and why it contained 6 for most of this project's life.
 
 Everything here is reproducible: `node tools/gen-synthetic-templates.js` prints the tables below and writes nothing unless given an output path.
 
@@ -141,7 +141,9 @@ keep (16): A B C D E F I L N O P Q U W X Y
 drop  (8): G H K V R S M T
 ```
 
-**This number is misleading and was not adopted.** It survives by keeping one arbitrary representative of each collapsed pair — it keeps Q and drops G, keeps U and drops H, keeps P and drops K. A signer forming G would be shown Q, and one forming K would be shown P. A set that is internally separable but externally mislabelled is worse than a smaller honest one.
+**This number is misleading and was not adopted at the time.** It survives by keeping one arbitrary representative of each collapsed pair — it keeps Q and drops G, keeps U and drops H, keeps P and drops K. A signer forming G would be shown Q, and one forming K would be shown P. A set that is internally separable but externally mislabelled is worse than a smaller honest one.
+
+The final 20-letter set (see the adoption section at the end) accepts a version of this trade **deliberately**: pair members are chosen for phrase coverage rather than by greedy pruning (U and K are needed by LUKE; the 6-letter set already carried the same exposure for K/P), the gate is behavioural rather than geometric, and the mislabel exposure is documented in the README's limitations rather than left implicit. What made the greedy subset unacceptable was the arbitrariness and the silence, not the existence of a kept member per pair — signing coverage with the collision documented beats a smaller set once a demo no longer constrains the choice to the letters of one word.
 
 ---
 
@@ -192,7 +194,7 @@ L's figure is a rounding coincidence rather than a no-op: L–P was 1.373078 and
 
 Note that K's nearest confuser in the shipped file was never P — it was U, at 0.852. The exposure P created was on hardware, not in the fixture. It is now unreachable because P is not a candidate.
 
-**Shipped set: L, U, K, E, C, O.** Six letters, 30 samples, runtime-confirmed.
+**Set shipped for the demo and video: L, U, K, E, C, O.** Six letters, 30 samples, runtime-confirmed. Superseded by the 20-letter set below after the video was recorded.
 
 ---
 
@@ -223,3 +225,44 @@ letter   LOO      gate      nearest   returned instead
 - **6 letters fail the gate but still classify 5/5: M, N, R, S, T, V.** Their classes overlap, yet each letter's own samples remain nearest. Reporting these as failures would overstate the problem; reporting them as fine would understate it. They are the letters real templates would decide, and synthetic geometry cannot.
 
 Both sets are pinned in the tool, which exits non-zero if either drifts — so the numbers quoted here and in the README are a claim under test rather than a snapshot that quietly goes stale.
+
+
+---
+
+## The 20-letter adoption
+
+After the video was recorded, the set was expanded to the maximum the measurements support. The
+candidate ceiling is 21: the 24 static letters minus one member of each rotation-collision pair,
+since loading both members of a pair measured at 0.000 makes the classifier a coin flip between
+them. Kept members were chosen for phrase coverage, not greedily: **U** and **K** (needed by LUKE,
+and already the kept members in the 6-letter set) and **G** (either of G/Q was clean; G's variant
+also had zero single-draw misclassifications).
+
+The gate is the behavioural one established by the 18-letter attempt — leave-one-out
+classification, every sample to itself, **5/5 on every one of 12 independent jitter draws** —
+not the 1.5x geometric ratio, which rejects letters that classify perfectly (M N R S T V overlap
+geometrically yet stay nearest to their own samples).
+
+```
+21 letters (with G):  M fails — 1/60, into N
+21 letters (with Q):  M fails — 1/60, into N
+20 letters (drop M):  PASS — 1200/1200, every letter 5/5 on every draw
+20 letters (drop N):  PASS — 1200/1200
+```
+
+The M/N boundary is the same one that sank the 18-letter attempt (there N failed 1/60 into M);
+which member fails is decided by the jitter draw, so one of the pair had to go. **N was kept over
+M** because it unlocks FRIEND — the N-variant makes 5 of DEFAULT_PHRASES signable (LUKE, RIO, AR,
+CLAD, FRIEND) against the M-variant's 4.
+
+**Adopted: A B C D E F G I K L N O R S T U V W X Y** — 20 letters, 100 samples.
+Absent and refused by phrase gating: H M P Q. Motion letters: J Z.
+The 6-letter file is kept as `templates.synthetic.6letter.json`.
+
+Runtime confirmation: `SignBridge: loaded 20 letters / 100 samples`, phrase menu `[1/5]`, and the
+`signbridge-alphabet-coverage` LEAF scenario — which drives every loaded letter through the real
+mock → classifier → HoldBuffer pipeline and requires a commit for each — passes with all 20, as
+does the rest of the six-scenario suite.
+
+Reproduce: `node tools/characterize-alphabet.js ABCDEFGIKLNORSTUVWXY` (the adoption gate),
+`node tools/characterize-alphabet.js ABCDEFGIKLMNORSTUVWXY` minus any letter to explore variants.

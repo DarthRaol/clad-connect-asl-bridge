@@ -33,6 +33,7 @@ import {
 import {HandVisualizer} from "./HandVisualizer"
 import {PhraseController} from "./PhraseController"
 import {SignPanel, SignPanelView, updateSignPanels} from "./SignPanel"
+import {Button} from "SpectaclesUIKit.lspkg/Scripts/Components/Button/Button"
 import {extractNormalized, letterKeys, TemplatesFile} from "./TemplateFormat"
 
 /** One step of a scripted mock playback. See SignBridge.playScript(). */
@@ -161,6 +162,21 @@ export class SignBridge extends BaseScriptComponent {
   verbose: boolean = true
   @ui.group_end
 
+  @ui.group_start("Speech flow")
+  @input
+  @hint("Idle screen with a START button, then speech-to-text, then spelling. Off = legacy behaviour: spelling starts immediately on load.")
+  enableFlow: boolean = true
+
+  @input
+  @hint("Preview-only stand-in transcript. The editor cannot run AsrModule, so pinching START shows 'SIMULATED INPUT: <this>' and uses it verbatim — labelled as simulated, never presented as ASR.")
+  simulatedTranscript: string = "LUKE"
+
+  @input
+  @hint("How long the finished word stays up before returning to the idle screen. Ignored while loopDemo is on.")
+  @widget(new SliderWidget(1, 10, 0.5))
+  flowCompleteHoldSeconds: number = 4
+  @ui.group_end
+
   @ui.group_start("Filming aids")
   @ui.label("Recording conveniences, NOT product behaviour. Both default to shipped behaviour; set them back to 0 / off before committing.")
   @input
@@ -196,6 +212,18 @@ export class SignBridge extends BaseScriptComponent {
   private referenceLetter: string | null = null
   private referencePose: number[] | null = null
   private referenceScale = 1
+
+  // Speech-flow state. "spelling" is the pass-through state in which the
+  // classify pipeline runs; every other state feeds the pipeline untracked
+  // frames, exactly like the filming-aid hold. With enableFlow off the state
+  // is pinned to "spelling" and none of this exists behaviourally.
+  private flowState: "idle" | "listening" | "spelling" | "complete" = "spelling"
+  private flowRoot: SceneObject | null = null
+  private flowButtonObject: SceneObject | null = null
+  private flowStatusText: Text | null = null
+  private listenTimer = 0
+  private completeTimer = 0
+  private asrActive = false
 
   // Filming-aid state. All inert while startDelaySeconds is 0 and loopDemo is
   // off, which is the shipped configuration.
@@ -241,6 +269,10 @@ export class SignBridge extends BaseScriptComponent {
       this.loadTemplates()
       this.configureAudio()
       this.logConfiguration()
+      if (this.enableFlow) {
+        this.buildFlowScreen()
+        this.enterIdle(null)
+      }
     })
 
     this.createEvent("UpdateEvent").bind(() => {
@@ -312,6 +344,12 @@ export class SignBridge extends BaseScriptComponent {
    */
   private updateReferenceHand(features: ArrayLike<number> | null): void {
     if (!this.referenceHandVisualizer) {
+      return
+    }
+    // On the flow's idle/listening screens there is no spelling task, so a
+    // target hand (even dim) would float over the idle UI implying one.
+    if (this.enableFlow && (this.flowState === "idle" || this.flowState === "listening")) {
+      this.referenceHandVisualizer.renderReference(null, 0)
       return
     }
     if (!this.showReferenceHand || this.templates === null) {
@@ -503,11 +541,16 @@ export class SignBridge extends BaseScriptComponent {
         }
       }
 
+      if (this.enableFlow) {
+        this.updateFlow(dt)
+      }
+
       // Idle means "produce no input this frame". The pipeline is fed an
       // untracked frame rather than skipped, so HoldBuffer stays reset and the
       // hands hide — a clean, still start rather than a frozen pose that would
-      // keep filling the window and commit on its own.
-      if (!this.started || this.loopPending) {
+      // keep filling the window and commit on its own. The speech-flow states
+      // other than "spelling" hold the pipeline the same way.
+      if (!this.started || this.loopPending || (this.enableFlow && this.flowState !== "spelling")) {
         this.holdBuffer.push(null)
         if (this.handVisualizer) {
           this.handVisualizer.render(null, this.holdBuffer.getState(), null, dt)
@@ -836,6 +879,15 @@ export class SignBridge extends BaseScriptComponent {
   }
 
   restart(): void {
+    // restart() is the entry point LEAF's resetBridge() and the loop use, and
+    // both mean "spell now" — so it doubles as the flow's jump-to-spelling.
+    // Without this, a Lens that boots into the idle screen would feed every
+    // scenario untracked frames until it timed out.
+    if (this.enableFlow) {
+      this.flowState = "spelling"
+      this.setFlowScreenVisible(false)
+      this.setSpellingContentVisible(true)
+    }
     this.phrases.restart()
     this.holdBuffer.reset()
     // Drop the cached reference target so the pose and its distance scale are
@@ -866,6 +918,264 @@ export class SignBridge extends BaseScriptComponent {
     }
     if (this.verbose) {
       print("SignBridge: loop restart — '" + this.phrases.getState().phrase + "' from the top.")
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Speech flow: idle -> listening -> spelling -> complete -> idle
+  //
+  // Only the screen state machine lives here. The spelling half is entirely
+  // PhraseController's — this code seats a phrase and gets out of the way.
+  // -------------------------------------------------------------------------
+
+  /** Per-frame flow transitions. Runs every frame while enableFlow is on. */
+  private updateFlow(dt: number): void {
+    if (this.flowState === "listening" && this.listenTimer > 0) {
+      // Editor-only simulated path. The device path is event-driven and never
+      // arms this timer.
+      this.listenTimer -= dt
+      if (this.listenTimer <= 0) {
+        this.handleTranscript(this.simulatedTranscript, true)
+      }
+      return
+    }
+
+    if (this.flowState === "spelling") {
+      // loopDemo owns completion while it is on — the loop restarts the phrase
+      // and the flow must not yank it back to idle mid-take.
+      if (!this.loopDemo && this.phrases.getState().status === "complete") {
+        this.flowState = "complete"
+        this.completeTimer = this.flowCompleteHoldSeconds
+      }
+      return
+    }
+
+    if (this.flowState === "complete") {
+      this.completeTimer -= dt
+      if (this.completeTimer <= 0) {
+        this.enterIdle("SPELLED '" + this.phrases.getState().phrase + "'")
+      }
+    }
+  }
+
+  /** Show the idle screen. `note` is a line about how we got here, or null. */
+  private enterIdle(note: string | null): void {
+    this.flowState = "idle"
+    this.asrActive = false
+    this.listenTimer = 0
+    this.setSpellingContentVisible(false)
+    this.setFlowScreenVisible(true)
+    if (this.flowButtonObject) {
+      this.flowButtonObject.enabled = true
+    }
+    if (this.flowStatusText) {
+      this.flowStatusText.text = note !== null ? note : "PINCH START, THEN SAY A WORD"
+      this.flowStatusText.textFill.color = new vec4(0.75, 0.78, 0.82, 1)
+    }
+  }
+
+  /** The START button's pinch handler. */
+  private beginListening(): void {
+    if (this.flowState !== "idle") {
+      return
+    }
+    this.flowState = "listening"
+    if (this.flowButtonObject) {
+      this.flowButtonObject.enabled = false
+    }
+
+    if (global.deviceInfoSystem.isEditor()) {
+      // The editor cannot run AsrModule, so this is a stand-in — and it says
+      // so on screen. Same rule as the DEMO POSE label: the substitution is
+      // visible, not passed off as a microphone. Do NOT relabel this as
+      // listening/ASR; honesty about the fake middle step is the point.
+      if (this.flowStatusText) {
+        this.flowStatusText.text = "SIMULATED INPUT: " + this.simulatedTranscript.toUpperCase()
+        this.flowStatusText.textFill.color = new vec4(1, 0.72, 0.18, 1)
+      }
+      // Long enough to READ on camera — the label is the honesty mechanism,
+      // and a flash too quick to read defeats it.
+      this.listenTimer = 2.5
+      if (this.verbose) {
+        print("SignBridge: flow listening (EDITOR) — simulated transcript '" + this.simulatedTranscript + "'.")
+      }
+      return
+    }
+
+    this.startDeviceAsr()
+  }
+
+  /** Device path: real AsrModule transcription. Spectacles only. */
+  private startDeviceAsr(): void {
+    let asr: AsrModule | null = null
+    try {
+      asr = require("LensStudio:AsrModule") as AsrModule
+    } catch (e) {
+      asr = null
+    }
+    if (asr === null) {
+      this.enterIdle("SPEECH UNAVAILABLE ON THIS DEVICE")
+      return
+    }
+
+    if (this.flowStatusText) {
+      this.flowStatusText.text = "LISTENING…"
+      this.flowStatusText.textFill.color = new vec4(0.35, 0.95, 0.85, 1)
+    }
+
+    const options = AsrModule.AsrTranscriptionOptions.create()
+    options.silenceUntilTerminationMs = 1000
+    options.onTranscriptionUpdateEvent.add((ev) => {
+      if (!ev.isFinal) {
+        if (this.flowStatusText && ev.text.length > 0) {
+          this.flowStatusText.text = "LISTENING… " + ev.text.toUpperCase()
+        }
+        return
+      }
+      this.asrActive = false
+      asr.stopTranscribing()
+      this.handleTranscript(ev.text, false)
+    })
+    options.onTranscriptionErrorEvent.add((code) => {
+      this.asrActive = false
+      this.enterIdle("SPEECH ERROR (" + code + ") — TRY AGAIN")
+    })
+    this.asrActive = true
+    asr.startTranscribing(options)
+  }
+
+  /**
+   * Validate a transcript against what the classifier can actually spell.
+   * Everything funnels through unsignableLetters()/setPhrase() — the same
+   * gate the phrase menu uses — so speech cannot seat a word the 6-letter
+   * template set cannot recognize.
+   */
+  private handleTranscript(raw: string, simulated: boolean): void {
+    const word = (raw !== null && raw !== undefined ? raw : "")
+      .toUpperCase()
+      .replace(/[^A-Z]/g, "")
+    if (this.verbose) {
+      print("SignBridge: flow transcript " + (simulated ? "(SIMULATED) " : "") + "'" + raw + "' -> '" + word + "'")
+    }
+    if (word.length === 0) {
+      this.enterIdle("DIDN'T CATCH THAT — TRY AGAIN")
+      return
+    }
+
+    const missing = this.phrases.unsignableLetters(word)
+    if (missing.length > 0) {
+      this.enterIdle("CAN'T SPELL '" + word + "' YET — MISSING " + missing.join(" "))
+      return
+    }
+
+    if (!this.seatPhrase(word)) {
+      // unsignableLetters() said yes but setPhrase() refused — J/Z or another
+      // guard fired. Surface it rather than dead-ending.
+      this.enterIdle("CAN'T SPELL '" + word + "' YET")
+      return
+    }
+
+    if (this.verbose) {
+      print("SignBridge: flow spelling '" + word + "'.")
+    }
+  }
+
+  /**
+   * Seat an arbitrary word as the active phrase and reset the pipeline so
+   * spelling starts from the top. Goes through the same setPhrase() gate as
+   * the speech flow, so a word needing letters the classifier does not have is
+   * refused (returns false). restart() re-seats the phrase (setPhrase is
+   * idempotent on a clean phrase), clears the hold buffer and the
+   * reference-hand cache, and flips the speech flow to "spelling".
+   *
+   * Public for the speech flow and for LEAF scenarios — the alphabet-demo
+   * scenario uses it to seat the full loaded letter set as one word.
+   */
+  seatPhrase(word: string): boolean {
+    if (!this.phrases.setPhrase(word)) {
+      return false
+    }
+    this.restart()
+    if (this.mockHandInput) {
+      this.mockHandInput.reset()
+    }
+    return true
+  }
+
+  /** Build the idle screen: title, START button, status line. */
+  private buildFlowScreen(): void {
+    const root = global.scene.createSceneObject("FlowIdleScreen")
+    root.setParent(this.getSceneObject())
+    // In front of the inward panel plane (z -110) so it cannot z-fight it.
+    root.getTransform().setWorldPosition(new vec3(0, -13, -106))
+    this.flowRoot = root
+
+    this.flowText(root, "ASL BRIDGE", 52, new vec4(1, 1, 1, 1), new vec3(0, 2.5, 0))
+    this.flowStatusText = this.flowText(
+      root,
+      "PINCH START, THEN SAY A WORD",
+      30,
+      new vec4(0.75, 0.78, 0.82, 1),
+      new vec3(0, -0.6, 0)
+    )
+
+    const buttonObj = global.scene.createSceneObject("FlowStartButton")
+    buttonObj.setParent(root)
+    buttonObj.getTransform().setLocalPosition(new vec3(0, -5.5, 0))
+    this.flowButtonObject = buttonObj
+    const button = buttonObj.createComponent(Button.getTypeName()) as Button
+    button.size = new vec3(12, 4.2, 1.6)
+    // NOTE: the panels' plates were deliberately stripped of their
+    // Interactables (they are readouts). This button is the ONE interactive
+    // object in the Lens, and its Interactable comes from the UIKit Button
+    // itself — do not "clean" it the way the plates were cleaned.
+    button.onTriggerUp.add(() => {
+      this.beginListening()
+    })
+
+    this.flowText(buttonObj, "START", 34, new vec4(1, 1, 1, 1), new vec3(0, 0, 1.2))
+  }
+
+  private flowText(parent: SceneObject, value: string, size: number, color: vec4, offset: vec3): Text {
+    const so = global.scene.createSceneObject("FlowText")
+    so.setParent(parent)
+    so.getTransform().setLocalPosition(offset)
+    const t = so.createComponent("Component.Text") as Text
+    t.text = value
+    t.size = size
+    t.textFill.color = color
+    t.horizontalAlignment = HorizontalAlignment.Center
+    t.verticalAlignment = VerticalAlignment.Center
+    return t
+  }
+
+  private setFlowScreenVisible(on: boolean): void {
+    if (this.flowRoot !== null && this.flowRoot.enabled !== on) {
+      this.flowRoot.enabled = on
+    }
+  }
+
+  /**
+   * Hide the spelling surfaces (panels + the live hand's caption) while the
+   * idle/listening screens are up, so the two screens never overprint. The
+   * reference hand hides via updateReferenceHand's own flow check, and the live
+   * rig hides itself on the untracked frames the hold state feeds it.
+   */
+  private setSpellingContentVisible(on: boolean): void {
+    const panels = [this.inwardPanel, this.outwardPanel]
+    for (let i = 0; i < panels.length; i++) {
+      if (panels[i]) {
+        const so = panels[i].getSceneObject()
+        if (so.enabled !== on) {
+          so.enabled = on
+        }
+      }
+    }
+    if (this.handVisualizer && this.handVisualizer.labelObject) {
+      this.handVisualizer.labelObject.enabled = on
+    }
+    if (this.referenceHandVisualizer && this.referenceHandVisualizer.labelObject && !on) {
+      this.referenceHandVisualizer.labelObject.enabled = false
     }
   }
 }

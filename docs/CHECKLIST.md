@@ -47,7 +47,8 @@ Legend: `[x]` done · `[ ]` todo · **You** / **CLAD** = who does it · ⏱ = ro
 - [x] `SignPanel.ts` ×2 — outward (assembled text) + inward (target word, bar, flash)
 - [x] `SignBridge.ts` — the driver; full chain running in preview
 - [x] 6 LEAF scenarios, all passing, **mutation-verified**
-- [x] `templates.synthetic.json` — **6 letters** (L U K E C O), flagged synthetic.
+- [x] `templates.synthetic.json` — **20 letters** (A B C D E F G I K L N O R S T U V W X Y), flagged
+      synthetic. Adopted via the 12-seed LOO gate; 6-letter file kept as `templates.synthetic.6letter.json`.
       P dropped as K's orientation-collision partner.
 - [x] `HandVisualizer.ts` — 26 joints + 25 bones rendered from the feature vector itself
 - [x] Commit + phrase-complete SFX, wired with a duration-derived tail guard
